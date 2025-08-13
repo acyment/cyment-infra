@@ -10,7 +10,4 @@ group-timer.cyment.com {
     encode gzip
 }
 
-# Default catch-all for future subdomains
-*.cyment.com {
-    respond "Service not configured" 404
-}
+# Remove wildcard - causes SSL issues without DNS challenge
