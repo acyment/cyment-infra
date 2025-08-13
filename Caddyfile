@@ -1,0 +1,16 @@
+# Postiz service (uses port 5000 as single entry point)
+postiz.cyment.com {
+    reverse_proxy postiz:5000
+    encode gzip
+}
+
+# Group Timer / PocketBase service
+group-timer.cyment.com {
+    reverse_proxy pocketbase:8090
+    encode gzip
+}
+
+# Default catch-all for future subdomains
+*.cyment.com {
+    respond "Service not configured" 404
+}

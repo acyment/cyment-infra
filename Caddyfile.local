@@ -1,0 +1,20 @@
+# Local testing - no HTTPS, plain HTTP
+# Postiz main service (frontend + API through internal nginx)
+:5001 {
+    reverse_proxy postiz:5000
+}
+
+# PocketBase service
+:5002 {
+    reverse_proxy pocketbase:8090
+}
+
+# Landing page on port 8080
+:8080 {
+    respond "Local Cyment Infrastructure
+        
+Services:
+- Postiz: http://localhost:5001
+- Group Timer (PocketBase): http://localhost:5002
+- PocketBase Admin: http://localhost:5002/_/" 200
+}
