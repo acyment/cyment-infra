@@ -1,6 +1,6 @@
-# Postiz service (uses port 5000 as single entry point)
+# Postiz service (uses port 3000 as single entry point)
 postiz.cyment.com {
-    reverse_proxy postiz:5000
+    reverse_proxy postiz:3000
     encode gzip
 }
 
