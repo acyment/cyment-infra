@@ -19,6 +19,7 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
 ## DNS Configuration
 
 Ensure these A records point to VPS B IP:
+
 - `postiz.cyment.com`
 - `group-timer.cyment.com`
 

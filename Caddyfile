@@ -10,4 +10,18 @@ group-timer.cyment.com {
     encode gzip
 }
 
+# CrowdTimer Zoom app + PocketBase proxy
+zoom.crowdclock.app {
+    encode gzip
+
+    @pocketbase path /pb* /pb/*
+    handle_path @pocketbase {
+        reverse_proxy pocketbase:8090
+    }
+
+    handle {
+        reverse_proxy crowdtimer-app:3000
+    }
+}
+
 # Remove wildcard - causes SSL issues without DNS challenge

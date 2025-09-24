@@ -88,6 +88,23 @@ services:
       - web
     restart: unless-stopped
 
+  crowdtimer-app:
+    build:
+      context: ../CrowdTimer
+      dockerfile: docker/crowdtimer-app/Dockerfile
+      args:
+        VITE_PB_URL: "https://zoom.crowdclock.app/pb"
+    environment:
+      PORT: 3000
+      HOST: 0.0.0.0
+      VITE_PB_URL: "https://zoom.crowdclock.app/pb"
+    depends_on:
+      pocketbase:
+        condition: service_started
+    networks:
+      - web
+    restart: unless-stopped
+
 networks:
   web:
     driver: bridge
