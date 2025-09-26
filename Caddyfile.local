@@ -6,7 +6,7 @@
 
 # PocketBase service
 :5002 {
-    reverse_proxy pocketbase:8090
+    reverse_proxy pocketbase:80
 }
 
 # Landing page on port 8080

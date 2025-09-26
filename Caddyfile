@@ -18,7 +18,7 @@ http://zoom.crowdclock.app {
 
     # Proxy PocketBase under /pb (strip the prefix)
     handle_path /pb/* {
-        reverse_proxy pocketbase:8090 {
+        reverse_proxy pocketbase:80 {
             header_up Host {host}
             header_up X-Real-IP {http.request.header.CF-Connecting-IP}
             header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}

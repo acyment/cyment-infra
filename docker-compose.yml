@@ -113,7 +113,7 @@ services:
       pocketbase:
         condition: service_started
     environment:
-      POCKETBASE_URL: "http://pocketbase:8090"
+      POCKETBASE_URL: "http://pocketbase:80"
       PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-admin@cyment.com}
       PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-changeme123}
       PB_WAIT_TIMEOUT_SEC: 240
