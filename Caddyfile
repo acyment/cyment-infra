@@ -4,8 +4,8 @@ postiz.cyment.com {
     encode gzip
 }
 
-# Group Timer / PocketBase service
-group-timer.cyment.com {
+# Group Timer / PocketBase service (disable origin TLS until DNS is present)
+http://group-timer.cyment.com {
     reverse_proxy pocketbase:8090
     encode gzip
 }
@@ -20,8 +20,8 @@ http://zoom.crowdclock.app {
         Referrer-Policy "no-referrer"
     }
 
-    @pocketbase path /pb* /pb/*
-    handle_path @pocketbase {
+    # Proxy PocketBase under /pb (strip the prefix)
+    handle_path /pb/* {
         reverse_proxy pocketbase:8090 {
             header_up Host {host}
             header_up X-Real-IP {http.request.header.CF-Connecting-IP}
@@ -37,11 +37,6 @@ http://zoom.crowdclock.app {
             header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
             header_up X-Forwarded-Proto {http.request.header.X-Forwarded-Proto}
         }
-    }
-}
-
-    handle {
-        reverse_proxy crowdtimer-app:3000
     }
 }
 
