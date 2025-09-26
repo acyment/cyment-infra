@@ -82,6 +82,9 @@ services:
     environment:
       - PB_ADMIN_EMAIL=${PB_ADMIN_EMAIL:-admin@cyment.com}
       - PB_ADMIN_PASSWORD=${PB_ADMIN_PASSWORD:-changeme123}
+    command:
+      - serve
+      - --http=0.0.0.0:8090
     networks:
       - web
     restart: unless-stopped
