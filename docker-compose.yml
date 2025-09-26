@@ -105,6 +105,22 @@ services:
       - web
     restart: unless-stopped
 
+  crowdtimer-pb-init:
+    image: crowdtimer/app:latest
+    depends_on:
+      pocketbase:
+        condition: service_started
+    environment:
+      POCKETBASE_URL: "http://pocketbase:8090"
+      PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-admin@cyment.com}
+      PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-changeme123}
+      PB_WAIT_TIMEOUT_SEC: 240
+    command: >-
+      sh -lc "bun packages/core/scripts/wait-for-pocketbase.ts && bun packages/core/scripts/seed-pocketbase.js"
+    restart: "no"
+    networks:
+      - web
+
 networks:
   web:
     driver: bridge
