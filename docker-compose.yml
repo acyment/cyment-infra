@@ -89,6 +89,7 @@ services:
     restart: unless-stopped
 
   crowdtimer-app:
+    image: crowdtimer/app:latest
     build:
       context: ../CrowdTimer
       dockerfile: docker/crowdtimer-app/Dockerfile
