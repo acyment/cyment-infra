@@ -117,7 +117,7 @@ services:
       PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-changeme123}
       PB_WAIT_TIMEOUT_SEC: 240
     command: >-
-      sh -lc 'bun -e "const base=(process.env.POCKETBASE_URL||\"http://pocketbase:8090\");const timeout=+(process.env.PB_WAIT_TIMEOUT_SEC||240)*1000;const start=Date.now();(async()=>{while(Date.now()-start<timeout){try{const r=await fetch(base+\"/api/health\");if(r.ok){console.log(\`[pb-wait] ready $\{base}\`);process.exit(0)}}catch(e){}await new Promise(r=>setTimeout(r,1500));}console.error(\`[pb-wait] timeout waiting for $\{base}\`);process.exit(1)})()" && bun ./packages/core/scripts/seed-pocketbase.js'
+      sh -lc 'set -euo pipefail; PB_URL="${POCKETBASE_URL:-http://pocketbase:8090}"; TIMEOUT=${PB_WAIT_TIMEOUT_SEC:-240}; INTERVAL=${PB_WAIT_INTERVAL_SEC:-2}; ELAPSED=0; while true; do if curl -fsS "$PB_URL/api/health" >/dev/null 2>&1; then echo "[pb-wait] ready $PB_URL"; break; fi; if [ "$ELAPSED" -ge "$TIMEOUT" ]; then echo "[pb-wait] timeout waiting for $PB_URL" >&2; exit 1; fi; sleep "$INTERVAL"; ELAPSED=$((ELAPSED+INTERVAL)); done; bun ./packages/core/scripts/seed-pocketbase.js'
     restart: "no"
     networks:
       - web
