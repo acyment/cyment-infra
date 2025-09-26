@@ -117,7 +117,7 @@ services:
       PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-changeme123}
       PB_WAIT_TIMEOUT_SEC: 240
     command: >-
-      sh -lc "bun packages/core/scripts/wait-for-pocketbase.ts && bun packages/core/scripts/seed-pocketbase.js"
+      sh -lc "bun ./packages/core/scripts/wait-for-pocketbase.ts && bun ./packages/core/scripts/seed-pocketbase.js"
     restart: "no"
     networks:
       - web
