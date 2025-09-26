@@ -117,7 +117,7 @@ services:
       PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-changeme123}
       PB_WAIT_TIMEOUT_SEC: 240
     command: >-
-      sh -ceu 'PB_URL="${POCKETBASE_URL:-http://pocketbase:8090}"; TIMEOUT=${PB_WAIT_TIMEOUT_SEC:-240}; INTERVAL=${PB_WAIT_INTERVAL_SEC:-2}; ELAPSED=0; while true; do if curl -fsS "$PB_URL/api/health" >/dev/null 2>&1; then echo "[pb-wait] ready $PB_URL"; break; fi; if [ "$ELAPSED" -ge "$TIMEOUT" ]; then echo "[pb-wait] timeout waiting for $PB_URL" >&2; exit 1; fi; sleep "$INTERVAL"; ELAPSED=$((ELAPSED+INTERVAL)); done; bun ./packages/core/scripts/seed-pocketbase.js'
+      sh -ceu 'PB_URL="${POCKETBASE_URL:-http://pocketbase:8090}"; TIMEOUT=${PB_WAIT_TIMEOUT_SEC:-240}; : "${PB_WAIT_INTERVAL_SEC:=2}"; INTERVAL=$PB_WAIT_INTERVAL_SEC; ELAPSED=0; while true; do if curl -fsS "$PB_URL/api/health" >/dev/null 2>&1; then echo "[pb-wait] ready $PB_URL"; break; fi; if [ "$ELAPSED" -ge "$TIMEOUT" ]; then echo "[pb-wait] timeout waiting for $PB_URL" >&2; exit 1; fi; sleep "$INTERVAL"; ELAPSED=$((ELAPSED+INTERVAL)); done; bun ./packages/core/scripts/seed-pocketbase.js'
     restart: "no"
     networks:
       - web
