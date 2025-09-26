@@ -6,7 +6,7 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
 
 - **Caddy**: Reverse proxy with automatic HTTPS
 - **Postiz**: Open-source social media scheduling (Buffer alternative)
-- **PocketBase**: Backend for group-timer and future apps
+- **PocketBase**: Backend for CrowdTimer and future apps
 - **PostgreSQL**: Database for Postiz
 - **Redis**: Cache/session store for Postiz
 
@@ -21,13 +21,12 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
 Ensure these A records point to VPS B IP:
 
 - `postiz.cyment.com`
-- `group-timer.cyment.com`
+- `zoom.crowdclock.app`
 
 ## Services Access
 
 - Postiz: https://postiz.cyment.com
-- Group Timer (PocketBase): https://group-timer.cyment.com
-- PocketBase Admin: https://group-timer.cyment.com/_/
+- PocketBase Admin: https://zoom.crowdclock.app/pb/_/
 
 ## Adding New Services
 

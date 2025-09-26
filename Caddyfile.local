@@ -15,6 +15,6 @@
         
 Services:
 - Postiz: http://localhost:5001
-- Group Timer (PocketBase): http://localhost:5002
+- PocketBase: http://localhost:5002
 - PocketBase Admin: http://localhost:5002/_/" 200
 }

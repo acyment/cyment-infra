@@ -4,11 +4,7 @@ postiz.cyment.com {
     encode gzip
 }
 
-# Group Timer / PocketBase service (disable origin TLS until DNS is present)
-http://group-timer.cyment.com {
-    reverse_proxy pocketbase:8090
-    encode gzip
-}
+
 
 # CrowdTimer Zoom app + PocketBase proxy
 http://zoom.crowdclock.app {
