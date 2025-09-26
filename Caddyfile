@@ -11,13 +11,34 @@ group-timer.cyment.com {
 }
 
 # CrowdTimer Zoom app + PocketBase proxy
-zoom.crowdclock.app {
+http://zoom.crowdclock.app {
     encode gzip
+
+    # Minimal edge headers (Express/helmet sets CSP)
+    header {
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "no-referrer"
+    }
 
     @pocketbase path /pb* /pb/*
     handle_path @pocketbase {
-        reverse_proxy pocketbase:8090
+        reverse_proxy pocketbase:8090 {
+            header_up Host {host}
+            header_up X-Real-IP {http.request.header.CF-Connecting-IP}
+            header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+            header_up X-Forwarded-Proto {http.request.header.X-Forwarded-Proto}
+        }
     }
+
+    handle {
+        reverse_proxy crowdtimer-app:3000 {
+            header_up Host {host}
+            header_up X-Real-IP {http.request.header.CF-Connecting-IP}
+            header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+            header_up X-Forwarded-Proto {http.request.header.X-Forwarded-Proto}
+        }
+    }
+}
 
     handle {
         reverse_proxy crowdtimer-app:3000
