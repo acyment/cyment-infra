@@ -96,11 +96,11 @@ services:
       context: ../CrowdTimer
       dockerfile: docker/crowdtimer-app/Dockerfile
       args:
-        VITE_PB_URL: "https://zoom.crowdclock.app/pb"
+        VITE_PB_URL: "https://zoom.crowdtimer.app/pb"
     environment:
       PORT: 3000
       HOST: 0.0.0.0
-      VITE_PB_URL: "https://zoom.crowdclock.app/pb"
+      VITE_PB_URL: "https://zoom.crowdtimer.app/pb"
     depends_on:
       pocketbase:
         condition: service_started
