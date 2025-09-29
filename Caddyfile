@@ -6,8 +6,8 @@ postiz.cyment.com {
 
 
 
-# CrowdTimer Zoom app + PocketBase proxy
-http://zoom.crowdclock.app {
+# CrowdTimer Zoom app + PocketBase proxy (public HTTPS)
+zoom.crowdtimer.app {
     encode gzip
 
     # Minimal edge headers (Express/helmet sets CSP)
