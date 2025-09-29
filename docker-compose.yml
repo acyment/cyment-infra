@@ -115,9 +115,9 @@ services:
     command:
       - -lc
       - >-
-        /usr/local/bin/pocketbase migrate up &&
-        (/usr/local/bin/pocketbase admin create "${PB_ADMIN_EMAIL:-admin@cyment.com}" "${PB_ADMIN_PASSWORD:-changeme123}" ||
-         /usr/local/bin/pocketbase admin update "${PB_ADMIN_EMAIL:-admin@cyment.com}" "${PB_ADMIN_PASSWORD:-changeme123}")
+        /usr/local/bin/pocketbase --dir=/pb/pb_data migrate up &&
+        (/usr/local/bin/pocketbase --dir=/pb/pb_data admin create "${PB_ADMIN_EMAIL:-admin@cyment.com}" "${PB_ADMIN_PASSWORD:-changeme123}" ||
+         /usr/local/bin/pocketbase --dir=/pb/pb_data admin update "${PB_ADMIN_EMAIL:-admin@cyment.com}" "${PB_ADMIN_PASSWORD:-changeme123}")
     environment:
       - PB_ADMIN_EMAIL=${PB_ADMIN_EMAIL:-admin@cyment.com}
       - PB_ADMIN_PASSWORD=${PB_ADMIN_PASSWORD:-changeme123}
