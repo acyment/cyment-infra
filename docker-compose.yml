@@ -109,6 +109,8 @@ services:
 
   pocketbase-admin-init:
     image: cyment-infra-pocketbase
+    env_file:
+      - .env
     entrypoint: sh
     command:
       - -lc
@@ -127,14 +129,14 @@ services:
 
   crowdtimer-pb-init:
     image: crowdtimer/app:latest
+    env_file:
+      - .env
     depends_on:
       pocketbase:
         condition: service_started
     environment:
       # Use HTTP on port 80 inside the container for simplicity
       POCKETBASE_URL: "http://pocketbase:80"
-      PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-admin@cyment.com}
-      PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-changeme123}
       PB_WAIT_TIMEOUT_SEC: 240
     command:
       - sh
