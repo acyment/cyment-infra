@@ -76,7 +76,7 @@ services:
       - internal
 
   pocketbase:
-    image: spectado/pocketbase:latest
+    build: ./pocketbase-image
     volumes:
       - pocketbase_data:/pb/pb_data
     environment:
@@ -84,7 +84,8 @@ services:
       - PB_ADMIN_PASSWORD=${PB_ADMIN_PASSWORD:-changeme123}
     command:
       - serve
-      - --http=0.0.0.0:8090
+      - --http=0.0.0.0:80
+      - --dir=/pb/pb_data
     networks:
       - web
     restart: unless-stopped
@@ -105,7 +106,24 @@ services:
         condition: service_started
     networks:
       - web
-    restart: unless-stopped
+
+  pocketbase-admin-init:
+    image: cyment-infra-pocketbase
+    entrypoint: sh
+    command:
+      - -lc
+      - >-
+        /usr/local/bin/pocketbase migrate up &&
+        (/usr/local/bin/pocketbase admin create "${PB_ADMIN_EMAIL:-admin@cyment.com}" "${PB_ADMIN_PASSWORD:-changeme123}" ||
+         /usr/local/bin/pocketbase admin update "${PB_ADMIN_EMAIL:-admin@cyment.com}" "${PB_ADMIN_PASSWORD:-changeme123}")
+    environment:
+      - PB_ADMIN_EMAIL=${PB_ADMIN_EMAIL:-admin@cyment.com}
+      - PB_ADMIN_PASSWORD=${PB_ADMIN_PASSWORD:-changeme123}
+    volumes:
+      - pocketbase_data:/pb/pb_data
+    restart: "no"
+    networks:
+      - web
 
   crowdtimer-pb-init:
     image: crowdtimer/app:latest
@@ -113,13 +131,24 @@ services:
       pocketbase:
         condition: service_started
     environment:
+      # Use HTTP on port 80 inside the container for simplicity
       POCKETBASE_URL: "http://pocketbase:80"
       PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-admin@cyment.com}
       PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-changeme123}
       PB_WAIT_TIMEOUT_SEC: 240
     command:
       - sh
-      - ./packages/core/scripts/wait-for-pocketbase.sh
+      - -lc
+      - >-
+        set -e;
+        PB_URL="$${POCKETBASE_URL:-http://pocketbase:80}";
+        echo "[pb-init] waiting for $$PB_URL";
+        for i in $$(seq 1 $${PB_WAIT_TIMEOUT_SEC:-240}); do
+          if curl -fsS "$$PB_URL/api/health" >/dev/null 2>&1; then echo "[pb-init] ready $$PB_URL"; break; fi;
+          sleep 1;
+        done;
+        awk 'NR>3{print}' ./packages/core/scripts/seed-pocketbase.js > /tmp/seed.js;
+        bun /tmp/seed.js
     restart: "no"
     networks:
       - web

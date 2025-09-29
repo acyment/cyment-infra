@@ -28,6 +28,22 @@ Ensure these A records point to VPS B IP:
 - Postiz: https://postiz.cyment.com
 - PocketBase Admin: https://zoom.crowdclock.app/pb/_/
 
+## One‑Shot Init
+
+- `pocketbase-admin-init` (run once per fresh volume): creates or updates the admin using `PB_ADMIN_EMAIL`/`PB_ADMIN_PASSWORD` from `.env`.
+  - `docker compose up -d --no-deps pocketbase-admin-init`
+
+- `crowdtimer-pb-init` (idempotent): waits for PocketBase and seeds required collections.
+  - `docker compose up -d --no-deps crowdtimer-pb-init`
+
+Both services exit after success. Re-run them safely if you change credentials (admin) or schema (seed).
+
+## Adding New Services
+
+1. Add service to `docker-compose.yml`
+2. Add reverse proxy rule to `Caddyfile`
+3. Update DNS records in Cloudflare
+
 ## Adding New Services
 
 1. Add service to `docker-compose.yml`
