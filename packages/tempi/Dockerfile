@@ -1,15 +1,16 @@
 # syntax=docker/dockerfile:1
 
-FROM oven/bun:1.1.31-alpine AS build
+FROM node:22.12-alpine AS build
 WORKDIR /app
 
-# Copy the Svelte timer source into the build stage
-COPY Tempi.app/ ./
+# Install build dependencies
+RUN apk add --no-cache bash
 
-# Ensure dependencies are installed inside the container
-RUN rm -rf node_modules \
-    && bun install --frozen-lockfile \
-    && bun run build
+# Install dependencies and build the static bundle
+COPY Tempi.app/package.json ./
+RUN npm install
+COPY Tempi.app/ ./
+RUN npm run build
 
 FROM nginx:1.27-alpine AS runner
 
