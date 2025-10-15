@@ -6,6 +6,12 @@ postiz.cyment.com {
 
 
 
+timer.cyment.com {
+    encode gzip
+    reverse_proxy tempi-app:80
+}
+
+
 # CrowdTimer Zoom app + PocketBase proxy (public HTTPS)
 zoom.crowdtimer.app {
     encode gzip
