@@ -9,7 +9,7 @@ RUN apk add --no-cache bash
 # Install dependencies and build the static bundle
 COPY Tempi.app/package.json ./
 COPY Tempi.app/bun.lock ./bun.lock
-RUN bun install --frozen-lockfile
+RUN bun install
 COPY Tempi.app/ ./
 RUN bun run build
 
