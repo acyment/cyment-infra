@@ -12,6 +12,7 @@ timer.cyment.com {
 }
 
 publiqueitor.cyment.com {
+    respond /notifications 200
     redir /auth/callback publiqueitor://oauth/callback?{query}
 }
 
