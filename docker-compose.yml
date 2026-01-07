@@ -75,38 +75,6 @@ services:
     networks:
       - internal
 
-  pocketbase:
-    build: ./pocketbase-image
-    volumes:
-      - pocketbase_data:/pb/pb_data
-    environment:
-      - PB_ADMIN_EMAIL=${PB_ADMIN_EMAIL:-admin@cyment.com}
-      - PB_ADMIN_PASSWORD=${PB_ADMIN_PASSWORD:-changeme123}
-    command:
-      - serve
-      - --http=0.0.0.0:80
-      - --dir=/pb/pb_data
-    networks:
-      - web
-    restart: unless-stopped
-
-  crowdtimer-app:
-    image: crowdtimer/app:latest
-    build:
-      context: ../CrowdTimer
-      dockerfile: docker/crowdtimer-app/Dockerfile
-      args:
-        VITE_PB_URL: "https://zoom.crowdtimer.app/pb"
-    environment:
-      PORT: 3000
-      HOST: 0.0.0.0
-      VITE_PB_URL: "https://zoom.crowdtimer.app/pb"
-    depends_on:
-      pocketbase:
-        condition: service_started
-    networks:
-      - web
-
   tempi-app:
     build:
       context: ..
@@ -115,53 +83,7 @@ services:
       - web
     restart: unless-stopped
 
-  pocketbase-admin-init:
-    image: cyment-infra-pocketbase
-    env_file:
-      - .env
-    entrypoint: sh
-    command:
-      - -lc
-      - >-
-        /usr/local/bin/pocketbase --dir=/pb/pb_data migrate up &&
-        (/usr/local/bin/pocketbase --dir=/pb/pb_data admin create "${PB_ADMIN_EMAIL:-admin@cyment.com}" "${PB_ADMIN_PASSWORD:-changeme123}" ||
-         /usr/local/bin/pocketbase --dir=/pb/pb_data admin update "${PB_ADMIN_EMAIL:-admin@cyment.com}" "${PB_ADMIN_PASSWORD:-changeme123}")
-    environment:
-      - PB_ADMIN_EMAIL=${PB_ADMIN_EMAIL:-admin@cyment.com}
-      - PB_ADMIN_PASSWORD=${PB_ADMIN_PASSWORD:-changeme123}
-    volumes:
-      - pocketbase_data:/pb/pb_data
-    restart: "no"
-    networks:
-      - web
 
-  crowdtimer-pb-init:
-    image: crowdtimer/app:latest
-    env_file:
-      - .env
-    depends_on:
-      pocketbase:
-        condition: service_started
-    environment:
-      # Use HTTP on port 80 inside the container for simplicity
-      POCKETBASE_URL: "http://pocketbase:80"
-      PB_WAIT_TIMEOUT_SEC: 240
-    command:
-      - sh
-      - -lc
-      - >-
-        set -e;
-        PB_URL="$${POCKETBASE_URL:-http://pocketbase:80}";
-        echo "[pb-init] waiting for $$PB_URL";
-        for i in $$(seq 1 $${PB_WAIT_TIMEOUT_SEC:-240}); do
-          if curl -fsS "$$PB_URL/api/health" >/dev/null 2>&1; then echo "[pb-init] ready $$PB_URL"; break; fi;
-          sleep 1;
-        done;
-        awk 'NR>3{print}' ./packages/core/scripts/seed-pocketbase.js > /tmp/seed.js;
-        bun /tmp/seed.js
-    restart: "no"
-    networks:
-      - web
 
 networks:
   web:
@@ -176,4 +98,4 @@ volumes:
   postiz_uploads:
   postiz_postgres_data:
   postiz_redis_data:
-  pocketbase_data:
+

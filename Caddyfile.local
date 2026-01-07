@@ -4,17 +4,10 @@
     reverse_proxy postiz:5000
 }
 
-# PocketBase service
-:5002 {
-    reverse_proxy pocketbase:80
-}
-
 # Landing page on port 8080
 :8080 {
     respond "Local Cyment Infrastructure
         
 Services:
-- Postiz: http://localhost:5001
-- PocketBase: http://localhost:5002
-- PocketBase Admin: http://localhost:5002/_/" 200
+- Postiz: http://localhost:5001" 200
 }

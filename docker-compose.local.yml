@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:8080"  # Landing page
       - "5001:5001"  # Postiz
-      - "5002:5002"  # PocketBase
+
     volumes:
       - ./Caddyfile.local:/etc/caddy/Caddyfile
       - caddy_data:/data
@@ -79,17 +79,6 @@ services:
     networks:
       - internal
 
-  pocketbase:
-    image: spectado/pocketbase:latest
-    volumes:
-      - pocketbase_data:/pb/pb_data
-    environment:
-      - PB_ADMIN_EMAIL=${PB_ADMIN_EMAIL:-admin@localhost}
-      - PB_ADMIN_PASSWORD=${PB_ADMIN_PASSWORD:-testpassword123}
-    networks:
-      - web
-    restart: unless-stopped
-
 networks:
   web:
     driver: bridge
@@ -103,4 +92,3 @@ volumes:
   postiz_uploads:
   postiz_postgres_data:
   postiz_redis_data:
-  pocketbase_data:
