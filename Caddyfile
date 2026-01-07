@@ -11,5 +11,8 @@ timer.cyment.com {
     reverse_proxy tempi-app:80
 }
 
+publiqueitor.cyment.com {
+    redir /auth/callback publiqueitor://oauth/callback?{query}
+}
 
 # Remove wildcard - causes SSL issues without DNS challenge
