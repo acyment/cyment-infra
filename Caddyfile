@@ -12,6 +12,11 @@ timer.cyment.com {
 }
 
 publiqueitor.cyment.com {
+    @aasa path /.well-known/apple-app-site-association /apple-app-site-association
+    header @aasa Content-Type application/json
+    header @aasa Cache-Control "no-store"
+    respond @aasa `{"applinks":{"apps":[],"details":[{"appID":"KM6C39Q64F.com.publiqueitor.app","paths":["/auth/callback*"]}]}}` 200
+
     respond /notifications 200
     redir /auth/callback publiqueitor://oauth/callback?{query}
 }
