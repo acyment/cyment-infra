@@ -17,8 +17,46 @@ publiqueitor.cyment.com {
     header @aasa Cache-Control "no-store"
     respond @aasa `{"applinks":{"apps":[],"details":[{"appID":"KM6C39Q64F.com.publiqueitor.app","paths":["/auth/callback*"]}]}}` 200
 
+    @authcb path /auth/callback
+    header @authcb Content-Type "text/html; charset=utf-8"
+    header @authcb Cache-Control "no-store"
+    respond @authcb `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Opening Publiqueitor…</title>
+    <style>
+      body { font-family: -apple-system, system-ui, sans-serif; padding: 24px; line-height: 1.4; }
+      .card { max-width: 520px; margin: 48px auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; }
+      .btn { display: inline-block; padding: 10px 14px; border-radius: 10px; background: #2563eb; color: white; text-decoration: none; font-weight: 600; }
+      .muted { color: #6b7280; font-size: 14px; margin-top: 10px; }
+      code { background: #f3f4f6; padding: 2px 6px; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Opening Publiqueitor…</h1>
+      <p>If the app doesn’t open automatically, tap the button below.</p>
+      <p>
+        <a class="btn" href="publiqueitor://oauth/callback?{query}">Open Publiqueitor</a>
+      </p>
+      <p class="muted">You can close this page after the app opens.</p>
+    </div>
+    <script>
+      (function () {
+        var url = 'publiqueitor://oauth/callback?{query}';
+        // Give Universal Links a moment; then try scheme fallback.
+        setTimeout(function () {
+          window.location.href = url;
+        }, 200);
+      })();
+    </script>
+  </body>
+</html>` 200
+
     respond /notifications 200
-    redir /auth/callback publiqueitor://oauth/callback?{query}
 }
+
 
 # Remove wildcard - causes SSL issues without DNS challenge
