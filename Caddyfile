@@ -11,6 +11,11 @@ timer.cyment.com {
     reverse_proxy tempi-app:80
 }
 
+backin15.app {
+    encode gzip
+    reverse_proxy tempi-app:80
+}
+
 publiqueitor.cyment.com {
     @aasa path /.well-known/apple-app-site-association /apple-app-site-association
     header @aasa Content-Type application/json
