@@ -14,6 +14,16 @@ timer.cyment.com {
 backin15.app {
     encode gzip
     reverse_proxy tempi-app:80
+    
+    # Apple App Site Association for Universal Links
+    @aasa path /.well-known/apple-app-site-association
+    header @aasa Content-Type application/json
+    header @aasa Cache-Control "no-store"
+    
+    # Android Asset Links
+    @assetlinks path /.well-known/assetlinks.json
+    header @assetlinks Content-Type application/json
+    header @assetlinks Cache-Control "no-store"
 }
 
 publiqueitor.cyment.com {
