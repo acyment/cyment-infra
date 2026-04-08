@@ -5,11 +5,31 @@ services:
     image: caddy:2-alpine
     ports:
       - "8080:8080"  # Landing page
+      - "5002:5002"  # BackIn15 local
 
     volumes:
       - ./Caddyfile.local:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      - web
+    restart: unless-stopped
+
+  backin15-app:
+    build:
+      context: ../backin15/apps/backin15_web
+      dockerfile: Dockerfile
+      args:
+        - VITE_APTABASE_APP_KEY=${BACKIN15_VITE_APTABASE_APP_KEY:-}
+        - VITE_SENTRY_DSN=${BACKIN15_VITE_SENTRY_DSN:-}
+        - VITE_APP_VERSION=${BACKIN15_VITE_APP_VERSION:-1.0.0}
+        - VITE_APP_IS_RELEASED=${BACKIN15_VITE_APP_IS_RELEASED:-false}
+        - VITE_IOS_APP_STORE_URL=${BACKIN15_VITE_IOS_APP_STORE_URL:-}
+        - VITE_ANDROID_PLAY_STORE_URL=${BACKIN15_VITE_ANDROID_PLAY_STORE_URL:-}
+        - VITE_QR_CODE_URL=${BACKIN15_VITE_QR_CODE_URL:-}
+        - VITE_IOS_BUNDLE_ID=${BACKIN15_VITE_IOS_BUNDLE_ID:-com.cyment.backin15}
+        - VITE_ANDROID_PACKAGE_NAME=${BACKIN15_VITE_ANDROID_PACKAGE_NAME:-com.cyment.backin15}
+    container_name: backin15-app-local
     networks:
       - web
     restart: unless-stopped

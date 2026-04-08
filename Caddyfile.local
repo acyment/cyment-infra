@@ -1,5 +1,10 @@
 # Local testing - no HTTPS, plain HTTP
 
+# BackIn15 on port 5002
+:5002 {
+    reverse_proxy backin15-app:80
+}
+
 # Landing page on port 8080
 :8080 {
     respond "Local Cyment Infrastructure - Landing Page" 200
