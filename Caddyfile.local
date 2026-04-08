@@ -1,13 +1,6 @@
 # Local testing - no HTTPS, plain HTTP
-# Postiz main service (frontend + API through internal nginx)
-:5001 {
-    reverse_proxy postiz:5000
-}
 
 # Landing page on port 8080
 :8080 {
-    respond "Local Cyment Infrastructure
-        
-Services:
-- Postiz: http://localhost:5001" 200
+    respond "Local Cyment Infrastructure - Landing Page" 200
 }

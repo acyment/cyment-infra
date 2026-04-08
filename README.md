@@ -5,9 +5,6 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
 ## Services
 
 - **Caddy**: Reverse proxy with automatic HTTPS
-- **Postiz**: Open-source social media scheduling (Buffer alternative)
-- **PostgreSQL**: Database for Postiz
-- **Redis**: Cache/session store for Postiz
 - **Tempi Timer**: Static Svelte timer served behind Caddy at https://timer.cyment.com
 
 ## Setup
@@ -20,12 +17,10 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
 
 Ensure these A records point to VPS B IP:
 
-- `postiz.cyment.com`
 - `timer.cyment.com`
 
 ## Services Access
 
-- Postiz: https://postiz.cyment.com
 - Tempi Timer: https://timer.cyment.com
 
 ## Tempi Timer Notes

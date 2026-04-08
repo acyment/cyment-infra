@@ -1,11 +1,3 @@
-# Postiz service (uses port 5000 as single entry point)
-postiz.cyment.com {
-    reverse_proxy postiz:5000
-    encode gzip
-}
-
-
-
 timer.cyment.com {
     encode gzip
     reverse_proxy tempi-app:80
