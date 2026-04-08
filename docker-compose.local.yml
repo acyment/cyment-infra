@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   caddy:
     image: caddy:2-alpine
+    container_name: caddy-local
     ports:
       - "8080:8080"  # Landing page
       - "5002:5002"  # BackIn15 local
-
     volumes:
       - ./Caddyfile.local:/etc/caddy/Caddyfile
       - caddy_data:/data
@@ -14,6 +12,12 @@ services:
     networks:
       - web
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   backin15-app:
     build:
@@ -33,11 +37,15 @@ services:
     networks:
       - web
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   web:
-    driver: bridge
-  internal:
     driver: bridge
 
 volumes:

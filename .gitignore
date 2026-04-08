@@ -1,9 +1,11 @@
 # Environment files
 .env
 .env.local
+.env.*.local
 
-# Docker volumes and data
+# Docker
 docker-compose.override.yml
+.dockerignore
 
 # Logs
 *.log
@@ -17,6 +19,20 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+*~
 
-.claude
+# Claude
+.claude/
+
+# Backup files
 *.bak-*
+
+# Build artifacts
+dist/
+build/
+node_modules/
+
+# Test artifacts
+test-results/
+coverage/
+*.test.log

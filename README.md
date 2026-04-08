@@ -1,59 +1,252 @@
 # Cyment Infrastructure
 
-Docker Compose setup for running multiple services on VPS B with Caddy reverse proxy.
+[![CI/CD](https://github.com/acyment/cyment-infra/actions/workflows/ci.yml/badge.svg)](https://github.com/acyment/cyment-infra/actions/workflows/ci.yml)
+
+Docker Compose setup for running multiple services on VPS B with Caddy reverse proxy and automatic HTTPS.
 
 ## Services
 
-- **Caddy**: Reverse proxy with automatic HTTPS
-- **Tempi Timer**: Static Svelte timer served behind Caddy at https://timer.cyment.com
-- **BackIn15**: Web app for BackIn15 session sharing at https://backin15.app
+| Service | Description | URL |
+|---------|-------------|-----|
+| **Caddy** | Reverse proxy with automatic HTTPS | - |
+| **Tempi Timer** | Static Svelte timer app | https://timer.cyment.com |
+| **BackIn15** | Session sharing web app | https://backin15.app |
+
+## Quick Start
+
+```bash
+# Setup (one-time)
+./scripts/setup.sh
+
+# Local development
+./scripts/deploy.sh local
+
+# Production deployment
+./scripts/deploy.sh production
+```
+
+## Prerequisites
+
+- Docker 24.0+
+- Docker Compose 2.20+
+- Git
+- Sibling repositories:
+  - `../Tempi.app` - Tempi Timer source
+  - `../backin15` - BackIn15 source
 
 ## Setup
 
-1. Clone repository to VPS B
-2. Copy `.env.example` to `.env` and configure
-3. Run: `docker compose up -d`
+### 1. Clone and Prepare
+
+```bash
+git clone <this-repo> cyment-infra
+cd cyment-infra
+
+# Clone sibling repositories
+git clone <tempi-repo-url> ../Tempi.app
+git clone <backin15-repo-url> ../backin15
+```
+
+### 2. Configure Environment
+
+```bash
+# Copy environment file
+cp .env.example .env
+
+# Edit with your values
+nano .env
+```
+
+### 3. Validate Setup
+
+```bash
+./scripts/test.sh
+```
+
+### 4. Deploy
+
+```bash
+# Local development
+./scripts/deploy.sh local
+
+# Production
+./scripts/deploy.sh production
+```
 
 ## DNS Configuration
 
-Ensure these A records point to VPS B IP:
+Ensure these A records point to your VPS IP:
 
 - `timer.cyment.com`
 - `backin15.app`
-- `www.backin15.app`
+- `www.backin15.app` → redirects to `backin15.app`
 
-## Services Access
+## Services
 
-- Tempi Timer: https://timer.cyment.com
-- BackIn15: https://backin15.app
+### Tempi Timer
 
-## BackIn15 Web App Notes
+- **URL**: https://timer.cyment.com
+- **Build Context**: `../Tempi.app`
+- **Tech Stack**: Svelte + Bun
 
-- Keep a sibling checkout of the BackIn15 source at `../backin15` when running `docker compose build`
-- The `backin15-app` image builds from `../backin15/apps/backin15_web/Dockerfile`
-- Deploy with `docker compose up -d --build backin15-app caddy` to rebuild and reload Caddy
-- Configure build-time environment variables in `.env` (see `.env.example`)
+**Deployment:**
+```bash
+docker compose up -d --build tempi-app caddy
+```
 
-## Tempi Timer Notes
+### BackIn15 Web App
 
-- Keep a sibling checkout of the Tempi source at `../Tempi.app` when running `docker compose build`; the `tempi-app` image copies that directory during the build stage.
-- Deploy the timer with `docker compose up -d --build tempi-app caddy` to rebuild the static bundle and reload Caddy.
+- **URL**: https://backin15.app
+- **Build Context**: `../backin15/apps/backin15_web`
+- **Tech Stack**: SvelteKit + Docker
 
+**Configuration (in `.env`):**
+- `BACKIN15_VITE_APTABASE_APP_KEY` - Analytics key
+- `BACKIN15_VITE_SENTRY_DSN` - Error tracking
+- `BACKIN15_VITE_APP_VERSION` - App version
+- `BACKIN15_VITE_*` - Other build arguments
+
+**Deployment:**
+```bash
+docker compose up -d --build backin15-app caddy
+```
+
+## Development
+
+### Local Development
+
+```bash
+# Start local services
+docker compose -f docker-compose.local.yml up -d
+
+# Access services
+# - http://localhost:8080 - Landing page
+# - http://localhost:5002 - BackIn15
+```
+
+### Testing
+
+```bash
+# Run all tests
+./scripts/test.sh
+
+# Specific tests
+docker compose -f docker-compose.yml config  # Validate config
+docker compose ps                           # Check status
+docker compose logs -f                      # View logs
+```
+
+### Backup
+
+```bash
+# Backup Caddy certificates and config
+./scripts/backup.sh
+```
+
+## Project Structure
+
+```
+cyment-infra/
+├── docker-compose.yml          # Production services
+├── docker-compose.local.yml    # Local development
+├── Caddyfile                   # Production reverse proxy
+├── Caddyfile.local            # Local reverse proxy
+├── .env.example               # Environment template
+├── scripts/                   # Automation scripts
+│   ├── setup.sh              # Initial setup
+│   ├── deploy.sh             # Deploy services
+│   ├── test.sh               # Run tests
+│   └── backup.sh             # Backup Caddy data
+├── .github/workflows/         # CI/CD
+│   └── ci.yml                # GitHub Actions
+└── packages/
+    └── tempi/
+        └── Dockerfile         # Tempi app build
+```
+
+## Health Checks
+
+All services include health checks:
+
+```bash
+# View health status
+docker compose ps
+
+# Check specific service
+docker compose exec caddy wget -qO- http://localhost:80
+docker compose exec backin15-app wget -qO- http://localhost:80/
+```
+
+## Troubleshooting
+
+### Services not starting
+
+```bash
+# Check logs
+docker compose logs
+
+# Validate configuration
+docker compose config
+
+# Restart with rebuild
+docker compose up -d --build
+```
+
+### SSL Certificate Issues
+
+```bash
+# View Caddy logs
+docker compose logs caddy
+
+# Check certificate status
+docker compose exec caddy caddy list-modules
+
+# Force certificate renewal (be careful with rate limits)
+docker compose restart caddy
+```
+
+### Build Failures
+
+```bash
+# Check sibling repositories exist
+ls -la ../Tempi.app
+ls -la ../backin15
+
+# Clean build
+docker compose down -v
+docker compose build --no-cache
+```
+
+## Security
+
+- Environment variables in `.env` (not committed)
+- Automatic HTTPS via Caddy
+- Health checks on all services
+- Regular backups recommended
+
+## CI/CD
+
+GitHub Actions workflow:
+- Validates Docker Compose files
+- Runs smoke tests
+- Checks for secrets in code
+- Verifies build process
 
 ## Adding New Services
 
 1. Add service to `docker-compose.yml`
 2. Add reverse proxy rule to `Caddyfile`
-3. Update DNS records in Cloudflare
+3. Update DNS records
+4. Add health check
+5. Update documentation
 
-## Local Development
+## Contributing
 
-Use `docker-compose.local.yml` for local testing:
+1. Create a feature branch
+2. Make changes
+3. Run tests: `./scripts/test.sh`
+4. Submit pull request
 
-```bash
-docker compose -f docker-compose.local.yml up -d
-```
+## License
 
-Local services available at:
-- Landing page: http://localhost:8080
-- BackIn15: http://localhost:5002
+Private - Cyment Infrastructure
