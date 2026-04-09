@@ -53,6 +53,16 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
     if [ ! -d "../backin15" ]; then
         echo "⚠️  backin15 not found at ../backin15"
     fi
+
+    if [ ! -d "../botini.club" ]; then
+        echo "⚠️  botini.club not found at ../botini.club"
+    fi
+
+    # Check required botini secrets
+    if [ -z "${BOTINI_DB_PASSWORD:-}" ] || [ -z "${BOTINI_JWT_SECRET:-}" ]; then
+        echo "❌ BOTINI_DB_PASSWORD and BOTINI_JWT_SECRET must be set in .env"
+        exit 1
+    fi
     
     # Validate compose file
     echo "Validating Docker Compose configuration..."
@@ -80,6 +90,7 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
     echo "Services:"
     echo "  - Tempi Timer:  https://timer.cyment.com"
     echo "  - BackIn15:     https://backin15.app"
+    echo "  - Botini Club:  https://botini.club"
     echo ""
     echo "Commands:"
     echo "  - View logs:   docker compose logs -f"

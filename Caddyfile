@@ -67,4 +67,14 @@ publiqueitor.cyment.com {
 }
 
 
+botini.club {
+    encode gzip
+    reverse_proxy /api/* botini-api:8000
+    reverse_proxy botini-frontend:3000
+}
+
+www.botini.club {
+    redir https://botini.club{uri}
+}
+
 # Remove wildcard - causes SSL issues without DNS challenge

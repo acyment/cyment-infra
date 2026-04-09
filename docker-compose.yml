@@ -59,6 +59,83 @@ services:
       retries: 3
       start_period: 10s
 
+  botini-db:
+    image: postgres:16-alpine
+    container_name: botini-db
+    environment:
+      POSTGRES_USER: botini
+      POSTGRES_PASSWORD: ${BOTINI_DB_PASSWORD}
+      POSTGRES_DB: botini
+    volumes:
+      - botini_pgdata:/var/lib/postgresql/data
+    networks:
+      - web
+    restart: unless-stopped
+
+  botini-redis:
+    image: redis:7-alpine
+    container_name: botini-redis
+    networks:
+      - web
+    restart: unless-stopped
+
+  botini-api:
+    build:
+      context: ../botini.club
+      dockerfile: Dockerfile
+    container_name: botini-api
+    environment:
+      DATABASE_URL: postgresql://botini:${BOTINI_DB_PASSWORD}@botini-db:5432/botini
+      REDIS_URL: redis://botini-redis:6379
+      CORS_ORIGINS: https://botini.club,https://www.botini.club
+      JWT_SECRET: ${BOTINI_JWT_SECRET}
+      GOOGLE_DRIVE_API_KEY: ${BOTINI_GOOGLE_DRIVE_API_KEY:-}
+      GOOGLE_CLIENT_ID: ${BOTINI_GOOGLE_CLIENT_ID:-}
+      ENV: production
+    depends_on:
+      - botini-db
+      - botini-redis
+    volumes:
+      - botini_media:/tmp/botini
+    networks:
+      - web
+    restart: unless-stopped
+
+  botini-worker:
+    build:
+      context: ../botini.club
+      dockerfile: Dockerfile
+    container_name: botini-worker
+    command: ["uv", "run", "arq", "backend.worker.WorkerSettings"]
+    environment:
+      DATABASE_URL: postgresql://botini:${BOTINI_DB_PASSWORD}@botini-db:5432/botini
+      REDIS_URL: redis://botini-redis:6379
+      GOOGLE_DRIVE_API_KEY: ${BOTINI_GOOGLE_DRIVE_API_KEY:-}
+    depends_on:
+      - botini-db
+      - botini-redis
+    volumes:
+      - botini_media:/tmp/botini
+    networks:
+      - web
+    restart: unless-stopped
+
+  botini-frontend:
+    build:
+      context: ../botini.club/frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ""
+        VITE_GOOGLE_CLIENT_ID: ${BOTINI_GOOGLE_CLIENT_ID:-}
+    container_name: botini-frontend
+    environment:
+      ORIGIN: https://botini.club
+    depends_on:
+      - botini-api
+    networks:
+      - web
+    restart: unless-stopped
+
 networks:
   web:
     driver: bridge
@@ -66,3 +143,5 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
+  botini_pgdata:
+  botini_media:
