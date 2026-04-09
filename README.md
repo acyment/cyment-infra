@@ -232,6 +232,44 @@ GitHub Actions workflow:
 - Checks for secrets in code
 - Verifies build process
 
+### Automated Deployment
+
+On every push to `main` or `master` branch, the CI/CD pipeline automatically:
+1. Validates all configurations
+2. Runs smoke tests
+3. Deploys to production VPS
+4. Restarts all services
+
+**Required GitHub Secrets:**
+
+| Secret | Description |
+|--------|-------------|
+| `VPS_HOST` | VPS IP address or hostname |
+| `VPS_USER` | SSH username |
+| `VPS_SSH_KEY` | Private SSH key for authentication |
+| `VPS_PATH` | Absolute path to cyment-infra on VPS (e.g., `/home/user/cyment-infra`) |
+
+**Setup:**
+1. Generate SSH key pair: `ssh-keygen -t ed25519 -C "github-actions" -f github-actions`
+2. Add public key to VPS: `cat github-actions.pub >> ~/.ssh/authorized_keys`
+3. Add private key to GitHub repository secrets as `VPS_SSH_KEY`
+4. Add other secrets (`VPS_HOST`, `VPS_USER`, `VPS_PATH`)
+5. Create GitHub environment named "production" for deployment protection rules
+
+**Deployment Flow:**
+- Pulls latest changes from this repository
+- Updates sibling repositories (Tempi.app, backin15, botini.club)
+- Runs `./scripts/deploy.sh production`
+- Shows service status
+
+**Manual Deployment:**
+```bash
+# On VPS
+./scripts/deploy.sh production
+```
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed setup instructions.
+
 ## Adding New Services
 
 1. Add service to `docker-compose.yml`
