@@ -349,19 +349,6 @@
         - { path: "/etc/shadow", mode: "0640" }
         - { path: "/etc/passwd", mode: "0644" }
 
-    # ============================================
-    # DISABLE UNUSED SERVICES
-    # ============================================
-    - name: Disable unnecessary services
-      service:
-        name: "{{ item }}"
-        state: stopped
-        enabled: no
-      loop:
-        - telnet
-        - ftp
-      ignore_errors: yes
-
   handlers:
     - name: reload ssh
       service:
