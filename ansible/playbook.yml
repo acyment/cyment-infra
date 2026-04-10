@@ -281,8 +281,10 @@
         line: "{{ item.line }}"
         state: present
       loop:
-        - { regexp: "^//Unattended-Upgrade::Allowed-Origins", line: 'Unattended-Upgrade::Allowed-Origins {' }
-        - { regexp: "^//\\s+\\${distro_id}\\\${distro_codename}-security", line: '        "${distro_id}:${distro_codename}-security";' }
+        - regexp: "^//Unattended-Upgrade::Allowed-Origins"
+          line: "Unattended-Upgrade::Allowed-Origins {"
+        - regexp: "^//\\s+\\${distro_id}:\\${distro_codename}-security"
+          line: "        \"${distro_id}:${distro_codename}-security\";"
 
     # ============================================
     # LOGROTATE CONFIGURATION
