@@ -68,6 +68,10 @@
           - jq
         state: present
 
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
     # ============================================
     # USER CONFIGURATION
     # ============================================
@@ -195,6 +199,13 @@
         name: fail2ban
         state: started
         enabled: yes
+      ignore_errors: yes
+      register: fail2ban_service
+
+    - name: Debug fail2ban service status
+      debug:
+        msg: "Fail2ban service status: {{ fail2ban_service | default('Not registered') }}"
+      when: fail2ban_service is defined
 
     # ============================================
     # FIREWALL (UFW)
