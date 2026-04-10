@@ -32,6 +32,9 @@ dist/
 build/
 node_modules/
 
+# Ansible
+ansible/files/
+
 # Test artifacts
 test-results/
 coverage/
