@@ -48,6 +48,9 @@ services:
         - VITE_QR_CODE_URL=${BACKIN15_VITE_QR_CODE_URL:-}
         - VITE_IOS_BUNDLE_ID=${BACKIN15_VITE_IOS_BUNDLE_ID:-com.cyment.backin15}
         - VITE_ANDROID_PACKAGE_NAME=${BACKIN15_VITE_ANDROID_PACKAGE_NAME:-com.cyment.backin15}
+        - IOS_TEAM_ID=${BACKIN15_IOS_TEAM_ID:-}
+        - IOS_APP_ID=${BACKIN15_IOS_APP_ID:-}
+        - ANDROID_APP_ID=${BACKIN15_ANDROID_APP_ID:-}
     container_name: backin15-app
     networks:
       - web
