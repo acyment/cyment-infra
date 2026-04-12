@@ -14,10 +14,11 @@ backin15.app {
     respond @aasa `{"applinks":{"apps":[],"details":[{"appID":"KM6C39Q64F.com.cyment.backin15","paths":["/session*"]}]}}` 200
 }
 
-www.backin15.app {
-    encode gzip
-    redir https://backin15.app{uri}
-}
+# www.backin15.app removed - no DNS record configured
+# To enable: Add DNS A record for www.backin15.app, then uncomment:
+# www.backin15.app {
+#     redir https://backin15.app{uri}
+# }
 
 publiqueitor.cyment.com {
     @aasa path /.well-known/apple-app-site-association /apple-app-site-association
@@ -73,8 +74,10 @@ botini.club {
     reverse_proxy botini-frontend:3000
 }
 
-www.botini.club {
-    redir https://botini.club{uri}
-}
+# www.botini.club removed - no DNS record configured
+# To enable: Add DNS A record for www.botini.club, then uncomment:
+# www.botini.club {
+#     redir https://botini.club{uri}
+# }
 
 # Remove wildcard - causes SSL issues without DNS challenge
