@@ -45,6 +45,9 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
         echo "❌ .env file not found! Create it from .env.example"
         exit 1
     fi
+
+    # Load .env so variable checks below work
+    set -a; source .env; set +a
     
     if [ ! -d "../Tempi.app" ]; then
         echo "⚠️  Tempi.app not found at ../Tempi.app"
