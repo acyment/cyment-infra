@@ -1,7 +1,8 @@
 services:
   caddy:
-    image: caddy:2.11-alpine
+    image: caddy:2.11
     container_name: caddy
+    init: true
     ports:
       - "80:80"
       - "443:443"
