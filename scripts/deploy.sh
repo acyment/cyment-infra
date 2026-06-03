@@ -70,7 +70,13 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
         echo "❌ BOTINI_DB_PASSWORD and BOTINI_JWT_SECRET must be set in .env"
         exit 1
     fi
-    
+
+    # Check required umami secrets (empty Postgres password breaks the container)
+    if [ -z "${UMAMI_DB_PASSWORD:-}" ] || [ -z "${UMAMI_APP_SECRET:-}" ]; then
+        echo "❌ UMAMI_DB_PASSWORD and UMAMI_APP_SECRET must be set in .env"
+        exit 1
+    fi
+
     # Validate compose file
     echo "Validating Docker Compose configuration..."
     docker compose -f "$COMPOSE_FILE" config > /dev/null
@@ -99,6 +105,7 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
     echo "  - BackIn15:     https://backin15.app"
     echo "  - Botini Club:  https://botini.club"
     echo "  - XCSteward:    https://xcsteward.com"
+    echo "  - Umami:        https://umami.cyment.com"
     echo ""
     echo "Commands:"
     echo "  - View logs:   docker compose logs -f"

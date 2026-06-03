@@ -163,6 +163,34 @@ services:
       retries: 3
       start_period: 10s
 
+  # Self-hosted, cookieless analytics (serves all cyment sites). One instance;
+  # create a "website" per property in the Umami UI to get each website-id.
+  umami-db:
+    image: postgres:18-alpine
+    container_name: umami-db
+    environment:
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD}
+      POSTGRES_DB: umami
+    volumes:
+      - umami_pgdata:/var/lib/postgresql/data
+    networks:
+      - web
+    restart: unless-stopped
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    container_name: umami
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD}@umami-db:5432/umami
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${UMAMI_APP_SECRET}
+    depends_on:
+      - umami-db
+    networks:
+      - web
+    restart: unless-stopped
+
 networks:
   web:
     driver: bridge
@@ -172,3 +200,4 @@ volumes:
   caddy_config:
   botini_pgdata:
   botini_media:
+  umami_pgdata:

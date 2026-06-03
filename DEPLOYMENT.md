@@ -72,6 +72,7 @@ curl -I https://timer.cyment.com
 curl -I https://backin15.app
 curl -I https://botini.club
 curl -I https://xcsteward.com
+curl -I https://umami.cyment.com
 ```
 
 ## SSH Key Setup

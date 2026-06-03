@@ -85,6 +85,12 @@ xcsteward.com {
     reverse_proxy xcsteward-app:80
 }
 
+# Self-hosted Umami analytics (cookieless), shared across cyment sites.
+umami.cyment.com {
+    encode gzip
+    reverse_proxy umami:3000
+}
+
 # www.xcsteward.com removed - no DNS record configured
 # To enable: Add DNS A record for www.xcsteward.com, then uncomment:
 # www.xcsteward.com {
