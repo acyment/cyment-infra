@@ -61,6 +61,10 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
         echo "⚠️  botini.club not found at ../botini.club"
     fi
 
+    if [ ! -d "../XCSteward-website" ]; then
+        echo "⚠️  XCSteward-website not found at ../XCSteward-website"
+    fi
+
     # Check required botini secrets
     if [ -z "${BOTINI_DB_PASSWORD:-}" ] || [ -z "${BOTINI_JWT_SECRET:-}" ]; then
         echo "❌ BOTINI_DB_PASSWORD and BOTINI_JWT_SECRET must be set in .env"
@@ -94,6 +98,7 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
     echo "  - Tempi Timer:  https://timer.cyment.com"
     echo "  - BackIn15:     https://backin15.app"
     echo "  - Botini Club:  https://botini.club"
+    echo "  - XCSteward:    https://xcsteward.com"
     echo ""
     echo "Commands:"
     echo "  - View logs:   docker compose logs -f"

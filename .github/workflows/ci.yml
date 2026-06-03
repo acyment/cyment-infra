@@ -137,6 +137,7 @@ jobs:
             cd ../backin15 && git pull origin master && \
             cd ../Tempi.app && git pull origin master 2>/dev/null || echo 'Tempi.app not found' && \
             cd ../botini.club && git pull origin master 2>/dev/null || echo 'botini.club not found' && \
+            cd ../XCSteward-website && git pull origin main 2>/dev/null || echo 'XCSteward-website not found' && \
             cd ${{ secrets.VPS_PATH }} && \
             echo 'Running deployment script...' && \
             ./scripts/deploy.sh production"

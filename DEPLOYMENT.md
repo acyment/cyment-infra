@@ -50,6 +50,7 @@ cd cyment-infra
 git clone https://github.com/acyment/Tempi.app.git ../Tempi.app
 git clone https://github.com/acyment/backin15.git ../backin15
 git clone https://github.com/acyment/botini.club.git ../botini.club
+git clone https://github.com/acyment/XCSteward-website.git ../XCSteward-website
 
 # Configure environment
 cp .env.example .env
@@ -70,6 +71,7 @@ docker compose ps
 curl -I https://timer.cyment.com
 curl -I https://backin15.app
 curl -I https://botini.club
+curl -I https://xcsteward.com
 ```
 
 ## SSH Key Setup

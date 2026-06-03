@@ -80,4 +80,15 @@ botini.club {
 #     redir https://botini.club{uri}
 # }
 
+xcsteward.com {
+    encode gzip
+    reverse_proxy xcsteward-app:80
+}
+
+# www.xcsteward.com removed - no DNS record configured
+# To enable: Add DNS A record for www.xcsteward.com, then uncomment:
+# www.xcsteward.com {
+#     redir https://xcsteward.com{uri}
+# }
+
 # Remove wildcard - causes SSL issues without DNS challenge

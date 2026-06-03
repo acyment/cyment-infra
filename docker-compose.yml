@@ -140,6 +140,29 @@ services:
       - web
     restart: unless-stopped
 
+  xcsteward-app:
+    build:
+      context: ../XCSteward-website
+      dockerfile: Dockerfile
+      args:
+        - SITE_URL=${XCSTEWARD_SITE_URL:-https://xcsteward.com}
+        - PUBLIC_ANALYTICS_PROVIDER=${XCSTEWARD_ANALYTICS_PROVIDER:-}
+        - PUBLIC_PLAUSIBLE_DOMAIN=${XCSTEWARD_PLAUSIBLE_DOMAIN:-}
+        - PUBLIC_UMAMI_WEBSITE_ID=${XCSTEWARD_UMAMI_WEBSITE_ID:-}
+        - PUBLIC_UMAMI_SRC=${XCSTEWARD_UMAMI_SRC:-}
+        - PUBLIC_CLOUDFLARE_ANALYTICS_TOKEN=${XCSTEWARD_CLOUDFLARE_ANALYTICS_TOKEN:-}
+        - PUBLIC_GOOGLE_SITE_VERIFICATION=${XCSTEWARD_GOOGLE_SITE_VERIFICATION:-}
+    container_name: xcsteward-app
+    networks:
+      - web
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
 networks:
   web:
     driver: bridge
