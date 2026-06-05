@@ -25,6 +25,7 @@ Thumbs.db
 .claude/
 
 # Backup files
+.codex-backups/
 *.bak-*
 
 # Build artifacts
