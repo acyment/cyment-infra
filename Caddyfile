@@ -20,6 +20,11 @@ backin15.app {
 #     redir https://backin15.app{uri}
 # }
 
+feria.fichusapp.com {
+    encode gzip
+    reverse_proxy fichus-feria:8787
+}
+
 publiqueitor.cyment.com {
     @aasa path /.well-known/apple-app-site-association /apple-app-site-association
     header @aasa Content-Type application/json
