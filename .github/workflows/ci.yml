@@ -19,8 +19,7 @@ jobs:
 
       - name: Validate Docker Compose (Production)
         run: |
-          # Only validate syntax, don't check build contexts
-          docker compose -f docker-compose.yml config > /dev/null 2>&1 || echo "Note: Some services reference private repos (expected)"
+          docker compose -f docker-compose.yml config > /dev/null
           echo "✓ Production Docker Compose syntax is valid"
 
       - name: Validate Docker Compose (Local)
@@ -31,27 +30,23 @@ jobs:
       - name: Validate Caddyfile (Production)
         run: |
           docker run --rm -v "$PWD/Caddyfile:/etc/caddy/Caddyfile" \
-            caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile 2>&1 || true
+            caddy:2.11-alpine caddy validate --config /etc/caddy/Caddyfile
           echo "✓ Production Caddyfile checked"
 
       - name: Validate Caddyfile (Local)
         run: |
           docker run --rm -v "$PWD/Caddyfile.local:/etc/caddy/Caddyfile" \
-            caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile 2>&1 || true
+            caddy:2.11-alpine caddy validate --config /etc/caddy/Caddyfile
           echo "✓ Local Caddyfile checked"
 
-      - name: Check for secrets in code
+      - name: Run infrastructure tests
         run: |
-          if grep -r "password\|secret\|token\|key" --include="*.yml" --include="*.yaml" --include="*.json" . 2>/dev/null | grep -v ".env.example\|README\|node_modules\|.git\|ansible/files\|scripts/" | head -5; then
-            echo "⚠️  Found potential secrets in code - review needed"
-          else
-            echo "✓ No obvious secrets found in committed files"
-          fi
+          ./scripts/test.sh
 
       - name: Validate Ansible playbook syntax
         run: |
           pip install ansible
-          ansible-playbook -i ansible/inventory.ini ansible/playbook.yml --syntax-check 2>&1 || true
+          ansible-playbook -i ansible/inventory.ini ansible/playbook.yml --syntax-check
           echo "✓ Ansible playbook syntax checked"
 
   build-test:
@@ -71,13 +66,12 @@ jobs:
         run: |
           if [ -d "../Tempi.app" ]; then
             echo "Building tempi-app..."
-            docker build -t tempi-app-test -f packages/tempi/Dockerfile .. 2>&1 | tail -20
+            docker build -t tempi-app-test -f packages/tempi/Dockerfile ..
             echo "✓ tempi-app build attempted"
           else
             echo "⚠️  Tempi.app repository not found (expected in CI)"
             echo "✓ Skipping tempi-app build"
           fi
-        continue-on-error: true
 
       - name: Test Caddy image pull
         run: |
@@ -122,13 +116,13 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
           cat >> ~/.ssh/config << EOF
           Host vps
             HostName ${{ secrets.VPS_HOST }}
             User ${{ secrets.VPS_USER }}
             IdentityFile ~/.ssh/deploy_key
-            StrictHostKeyChecking no
+            StrictHostKeyChecking yes
           EOF
           chmod 600 ~/.ssh/config
 
@@ -207,7 +201,7 @@ jobs:
             fi
           }
           echo 'Pulling latest changes...'
-          git pull origin master
+          git pull --ff-only origin "${{ github.ref_name }}"
 
           echo 'Pulling sibling repos...'
           ensure_repo ../backin15 "$BACKIN15_REPO" "$BACKIN15_BRANCH" backin15
