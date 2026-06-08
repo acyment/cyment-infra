@@ -50,6 +50,13 @@ else
     echo "   Run: git clone <backin15-repo-url> ../backin15"
 fi
 
+if [ -d "../fichus/backend/feria" ]; then
+    echo "✓ Fichus Feria backend found at ../fichus/backend/feria"
+else
+    echo "⚠️  Fichus Feria backend not found at ../fichus/backend/feria"
+    echo "   Run: git clone <fichus-repo-url> ../fichus"
+fi
+
 echo ""
 echo "⚙️  Setting up environment..."
 

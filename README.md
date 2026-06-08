@@ -11,6 +11,7 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
 | **Caddy** | Reverse proxy with automatic HTTPS | - |
 | **Tempi Timer** | Static Svelte timer app | https://timer.cyment.com |
 | **BackIn15** | Session sharing web app | https://backin15.app |
+| **Fichus Feria** | Ephemeral nearby sticker-trade matching API | https://feria.fichusapp.com |
 
 ## Quick Start
 
@@ -33,6 +34,7 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
 - Sibling repositories:
   - `../Tempi.app` - Tempi Timer source
   - `../backin15` - BackIn15 source
+  - `../fichus` - Fichus source, including `backend/feria`
 
 ## Setup
 
@@ -45,6 +47,7 @@ cd cyment-infra
 # Clone sibling repositories
 git clone <tempi-repo-url> ../Tempi.app
 git clone <backin15-repo-url> ../backin15
+git clone <fichus-repo-url> ../fichus
 ```
 
 ### 2. Configure Environment
@@ -80,6 +83,7 @@ Ensure these A records point to your VPS IP:
 - `timer.cyment.com`
 - `backin15.app`
 - `www.backin15.app` → redirects to `backin15.app`
+- `feria.fichusapp.com`
 
 ## Services
 
@@ -111,6 +115,27 @@ docker compose up -d --build tempi-app caddy
 docker compose up -d --build backin15-app caddy
 ```
 
+### Fichus Feria API
+
+- **URL**: https://feria.fichusapp.com
+- **Build Context**: `../fichus/backend/feria`
+- **Tech Stack**: Bun + TypeScript
+- **Health**: `GET /healthz`
+
+**Configuration (in `.env`, all optional):**
+- `FERIA_SESSION_TTL_MS`
+- `FERIA_INVITE_TTL_MS`
+- `FERIA_COORDINATION_TTL_MS`
+- `FERIA_K_ANON_MIN`
+- `FERIA_MATCH_THRESHOLD`
+- `FERIA_SYNC_RATE_MS`
+- `FERIA_GEOHASH_PRECISION`
+
+**Deployment:**
+```bash
+docker compose up -d --build fichus-feria caddy
+```
+
 ## Development
 
 ### Local Development
@@ -122,6 +147,7 @@ docker compose -f docker-compose.local.yml up -d
 # Access services
 # - http://localhost:8080 - Landing page
 # - http://localhost:5002 - BackIn15
+# - http://localhost:8787/healthz - Fichus Feria API
 ```
 
 ### Testing
@@ -139,7 +165,7 @@ docker compose logs -f                      # View logs
 ### Backup
 
 ```bash
-# Backup Caddy certificates and config
+# Backup Caddy data, Botini media, Botini Postgres, and Umami Postgres
 ./scripts/backup.sh
 ```
 
@@ -156,7 +182,7 @@ cyment-infra/
 │   ├── setup.sh              # Initial setup
 │   ├── deploy.sh             # Deploy services
 │   ├── test.sh               # Run tests
-│   └── backup.sh             # Backup Caddy data
+│   └── backup.sh             # Backup production state
 ├── .github/workflows/         # CI/CD
 │   └── ci.yml                # GitHub Actions
 └── packages/
@@ -175,6 +201,7 @@ docker compose ps
 # Check specific service
 docker compose exec caddy wget -qO- http://localhost:80
 docker compose exec backin15-app wget -qO- http://localhost:80/
+docker compose exec fichus-feria bun --eval "fetch('http://127.0.0.1:8787/healthz').then(r => console.log(r.status))"
 ```
 
 ## Troubleshooting
@@ -211,6 +238,7 @@ docker compose restart caddy
 # Check sibling repositories exist
 ls -la ../Tempi.app
 ls -la ../backin15
+ls -la ../fichus/backend/feria
 
 # Clean build
 docker compose down -v
@@ -258,7 +286,7 @@ On every push to `main` or `master` branch, the CI/CD pipeline automatically:
 
 **Deployment Flow:**
 - Pulls latest changes from this repository
-- Updates sibling repositories (Tempi.app, backin15, botini.club)
+- Updates sibling repositories (Tempi.app, backin15, fichus, botini.club)
 - Runs `./scripts/deploy.sh production`
 - Shows service status
 

@@ -49,6 +49,7 @@ cd cyment-infra
 # Clone sibling repositories
 git clone https://github.com/acyment/Tempi.app.git ../Tempi.app
 git clone https://github.com/acyment/backin15.git ../backin15
+git clone https://github.com/acyment/fichus.git ../fichus
 git clone https://github.com/acyment/botini.club.git ../botini.club
 git clone https://github.com/acyment/XCSteward-website.git ../XCSteward-website
 
@@ -70,6 +71,7 @@ docker compose ps
 # Test endpoints
 curl -I https://timer.cyment.com
 curl -I https://backin15.app
+curl -I https://feria.fichusapp.com/healthz
 curl -I https://botini.club
 curl -I https://xcsteward.com
 curl -I https://umami.cyment.com
@@ -212,6 +214,7 @@ docker compose ps
 docker compose logs caddy
 docker compose logs tempi-app
 docker compose logs backin15-app
+docker compose logs fichus-feria
 docker compose logs botini-api
 ```
 
@@ -241,7 +244,7 @@ docker compose logs --tail=50
 ls -la .env
 
 # Verify sibling repos exist
-ls -la ../Tempi.app ../backin15 ../botini.club
+ls -la ../Tempi.app ../backin15 ../fichus/backend/feria ../botini.club
 ```
 
 **Certificate/SSL issues:**
@@ -252,6 +255,7 @@ docker compose logs caddy
 # Test DNS resolution
 dig timer.cyment.com
 dig backin15.app
+dig feria.fichusapp.com
 
 # Check Caddyfile syntax
 docker compose exec caddy caddy validate --config /etc/caddy/Caddyfile
@@ -262,10 +266,12 @@ docker compose exec caddy caddy validate --config /etc/caddy/Caddyfile
 # Check sibling repo Dockerfiles exist
 ls ../Tempi.app/Dockerfile
 ls ../backin15/apps/backin15_web/Dockerfile
+ls ../fichus/backend/feria/Dockerfile
 ls ../botini.club/Dockerfile
 
 # Try building specific service
 docker compose build tempi-app
+docker compose build fichus-feria
 ```
 
 ### Rollback Procedure
@@ -288,6 +294,7 @@ git reset --hard HEAD~1
 # If sibling repos need rollback too
 cd ../Tempi.app && git checkout <commit> && cd -
 cd ../backin15 && git checkout <commit> && cd -
+cd ../fichus && git checkout <commit> && cd -
 cd ../botini.club && git checkout <commit> && cd -
 ```
 
@@ -297,7 +304,7 @@ cd ../botini.club && git checkout <commit> && cd -
 2. **Restrict SSH key** - Use `command=` restriction in authorized_keys
 3. **Use environment protection** - Require reviewers for production deployments
 4. **Monitor deployments** - Check Actions logs after each deploy
-5. **Backup regularly** - Run `./scripts/backup.sh` periodically
+5. **Backup regularly** - Run `./scripts/backup.sh` periodically, copy archives off the VPS, and test restores
 6. **Keep Docker updated** - Regular security updates on VPS
 
 ## Testing Deployment
