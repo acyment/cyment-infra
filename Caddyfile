@@ -87,6 +87,13 @@ botini.club {
 
 xcsteward.com {
     encode gzip
+
+    # Legacy alpha URL: permanent (301) redirect to the canonical /try/.
+    # The static site also ships a meta-refresh fallback at /beta/, but this
+    # HTTP-level 301 is cleaner for crawlers and skips the proxy round-trip.
+    @beta path /beta /beta/
+    redir @beta /try/ permanent
+
     reverse_proxy xcsteward-app:80
 }
 
