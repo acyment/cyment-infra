@@ -1,17 +1,17 @@
 timer.cyment.com {
-    encode gzip
-    reverse_proxy tempi-app:80
+	encode gzip
+	reverse_proxy tempi-app:80
 }
 
 backin15.app {
-    encode gzip
-    reverse_proxy backin15-app:80
+	encode gzip
+	reverse_proxy backin15-app:80
 
-    # Apple App Site Association for Universal Links
-    @aasa path /.well-known/apple-app-site-association
-    header @aasa Content-Type application/json
-    header @aasa Cache-Control "no-store"
-    respond @aasa `{"applinks":{"apps":[],"details":[{"appID":"KM6C39Q64F.com.cyment.backin15","paths":["/session*"]}]}}` 200
+	# Apple App Site Association for Universal Links
+	@aasa path /.well-known/apple-app-site-association
+	header @aasa Content-Type application/json
+	header @aasa Cache-Control "no-store"
+	respond @aasa `{"applinks":{"apps":[],"details":[{"appID":"KM6C39Q64F.com.cyment.backin15","paths":["/session*"]}]}}` 200
 }
 
 # www.backin15.app removed - no DNS record configured
@@ -21,20 +21,20 @@ backin15.app {
 # }
 
 feria.fichusapp.com {
-    encode gzip
-    reverse_proxy fichus-feria:8787
+	encode gzip
+	reverse_proxy fichus-feria:8787
 }
 
 publiqueitor.cyment.com {
-    @aasa path /.well-known/apple-app-site-association /apple-app-site-association
-    header @aasa Content-Type application/json
-    header @aasa Cache-Control "no-store"
-    respond @aasa `{"applinks":{"apps":[],"details":[{"appID":"KM6C39Q64F.com.publiqueitor.app","paths":["/auth/callback*"]}]}}` 200
+	@aasa path /.well-known/apple-app-site-association /apple-app-site-association
+	header @aasa Content-Type application/json
+	header @aasa Cache-Control "no-store"
+	respond @aasa `{"applinks":{"apps":[],"details":[{"appID":"KM6C39Q64F.com.publiqueitor.app","paths":["/auth/callback*"]}]}}` 200
 
-    @authcb path /auth/callback
-    header @authcb Content-Type "text/html; charset=utf-8"
-    header @authcb Cache-Control "no-store"
-    respond @authcb `<!doctype html>
+	@authcb path /auth/callback
+	header @authcb Content-Type "text/html; charset=utf-8"
+	header @authcb Cache-Control "no-store"
+	respond @authcb `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -69,14 +69,13 @@ publiqueitor.cyment.com {
   </body>
 </html>` 200
 
-    respond /notifications 200
+	respond /notifications 200
 }
 
-
 botini.club {
-    encode gzip
-    reverse_proxy /api/* botini-api:8000
-    reverse_proxy botini-frontend:3000
+	encode gzip
+	reverse_proxy /api/* botini-api:8000
+	reverse_proxy botini-frontend:3000
 }
 
 # www.botini.club removed - no DNS record configured
@@ -86,21 +85,21 @@ botini.club {
 # }
 
 xcsteward.com {
-    encode gzip
+	encode gzip
 
-    # Legacy alpha URL: permanent (301) redirect to the canonical /try/.
-    # The static site also ships a meta-refresh fallback at /beta/, but this
-    # HTTP-level 301 is cleaner for crawlers and skips the proxy round-trip.
-    @beta path /beta /beta/
-    redir @beta /try/ permanent
+	# Legacy alpha URL: permanent (301) redirect to the canonical /try/.
+	# This edge redirect is the single source of truth, handled here before
+	# the request ever reaches the static origin.
+	@beta path /beta /beta/
+	redir @beta /try/ permanent
 
-    reverse_proxy xcsteward-app:80
+	reverse_proxy xcsteward-app:80
 }
 
 # Self-hosted Umami analytics (cookieless), shared across cyment sites.
 umami.cyment.com {
-    encode gzip
-    reverse_proxy umami:3000
+	encode gzip
+	reverse_proxy umami:3000
 }
 
 # www.xcsteward.com removed - no DNS record configured
