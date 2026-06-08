@@ -140,13 +140,13 @@ jobs:
           git -C ../backin15 pull origin master
 
           if [ -d ../Tempi.app/.git ]; then
-            git -C ../Tempi.app pull origin master
+            git -C ../Tempi.app pull origin master || echo 'Tempi.app pull failed'
           else
             echo 'Tempi.app not found'
           fi
 
           if [ -d ../botini.club/.git ]; then
-            git -C ../botini.club pull origin master
+            git -C ../botini.club pull origin master || echo 'botini.club pull failed'
           else
             echo 'botini.club not found'
           fi
