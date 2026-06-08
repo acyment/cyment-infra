@@ -1,11 +1,33 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 echo "🚀 Deploying Cyment Infrastructure"
 echo "===================================="
 
 # Default to production
 ENV=${1:-production}
+
+require_dir() {
+    local path="$1"
+    local label="$2"
+
+    if [ ! -d "$path" ]; then
+        echo "❌ $label not found at $path"
+        exit 1
+    fi
+
+    echo "✓ $label found"
+}
+
+require_env() {
+    local name="$1"
+    local value="${!name:-}"
+
+    if [ -z "$value" ] || [ "$value" = "your_secure_password_here" ] || [ "$value" = "your_jwt_secret_here" ]; then
+        echo "❌ $name must be set in .env"
+        exit 1
+    fi
+}
 
 if [ "$ENV" = "local" ]; then
     COMPOSE_FILE="docker-compose.local.yml"
@@ -27,6 +49,7 @@ if [ "$ENV" = "local" ]; then
     echo "Services available at:"
     echo "  - Landing page: http://localhost:8080"
     echo "  - BackIn15:     http://localhost:5002"
+    echo "  - Fichus Feria: http://localhost:8787/healthz"
     echo ""
     echo "Commands:"
     echo "  - View logs:   docker compose -f $COMPOSE_FILE logs -f"
@@ -49,33 +72,19 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
     # Load .env so variable checks below work
     set -a; source .env; set +a
     
-    if [ ! -d "../Tempi.app" ]; then
-        echo "⚠️  Tempi.app not found at ../Tempi.app"
-    fi
-    
-    if [ ! -d "../backin15" ]; then
-        echo "⚠️  backin15 not found at ../backin15"
-    fi
-
-    if [ ! -d "../botini.club" ]; then
-        echo "⚠️  botini.club not found at ../botini.club"
-    fi
-
-    if [ ! -d "../XCSteward-website" ]; then
-        echo "⚠️  XCSteward-website not found at ../XCSteward-website"
-    fi
+    require_dir "../Tempi.app" "Tempi.app"
+    require_dir "../backin15" "backin15"
+    require_dir "../fichus/backend/feria" "Fichus Feria backend"
+    require_dir "../botini.club" "botini.club"
+    require_dir "../XCSteward-website" "XCSteward-website"
 
     # Check required botini secrets
-    if [ -z "${BOTINI_DB_PASSWORD:-}" ] || [ -z "${BOTINI_JWT_SECRET:-}" ]; then
-        echo "❌ BOTINI_DB_PASSWORD and BOTINI_JWT_SECRET must be set in .env"
-        exit 1
-    fi
+    require_env "BOTINI_DB_PASSWORD"
+    require_env "BOTINI_JWT_SECRET"
 
     # Check required umami secrets (empty Postgres password breaks the container)
-    if [ -z "${UMAMI_DB_PASSWORD:-}" ] || [ -z "${UMAMI_APP_SECRET:-}" ]; then
-        echo "❌ UMAMI_DB_PASSWORD and UMAMI_APP_SECRET must be set in .env"
-        exit 1
-    fi
+    require_env "UMAMI_DB_PASSWORD"
+    require_env "UMAMI_APP_SECRET"
 
     # Validate compose file
     echo "Validating Docker Compose configuration..."
@@ -85,17 +94,23 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
     # Build and deploy
     echo ""
     echo "🏗️  Building and deploying..."
-    docker compose -f "$COMPOSE_FILE" up -d --build
-    
-    # Wait for services
-    echo ""
-    echo "⏳ Waiting for services to be healthy..."
-    sleep 5
+    docker compose -f "$COMPOSE_FILE" up -d --build --wait --wait-timeout "${COMPOSE_WAIT_TIMEOUT:-180}"
     
     # Check health
     echo ""
     echo "📊 Service status:"
     docker compose -f "$COMPOSE_FILE" ps
+
+    if docker compose -f "$COMPOSE_FILE" ps --status exited -q | grep -q .; then
+        echo "❌ One or more services exited after deployment"
+        docker compose -f "$COMPOSE_FILE" ps --status exited
+        exit 1
+    fi
+
+    if docker compose -f "$COMPOSE_FILE" ps | grep -qi "unhealthy"; then
+        echo "❌ One or more services are unhealthy after deployment"
+        exit 1
+    fi
     
     echo ""
     echo "✅ Production deployment complete!"
@@ -103,6 +118,7 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
     echo "Services:"
     echo "  - Tempi Timer:  https://timer.cyment.com"
     echo "  - BackIn15:     https://backin15.app"
+    echo "  - Fichus Feria: https://feria.fichusapp.com/healthz"
     echo "  - Botini Club:  https://botini.club"
     echo "  - XCSteward:    https://xcsteward.com"
     echo "  - Umami:        https://umami.cyment.com"

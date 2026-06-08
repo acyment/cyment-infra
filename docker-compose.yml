@@ -99,6 +99,12 @@ services:
     networks:
       - web
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botini -d botini"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   botini-redis:
     image: redis:8-alpine
@@ -106,6 +112,12 @@ services:
     networks:
       - web
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   botini-api:
     build:
@@ -121,8 +133,10 @@ services:
       GOOGLE_CLIENT_ID: ${BOTINI_GOOGLE_CLIENT_ID:-}
       ENV: production
     depends_on:
-      - botini-db
-      - botini-redis
+      botini-db:
+        condition: service_healthy
+      botini-redis:
+        condition: service_healthy
     volumes:
       - botini_media:/tmp/botini
     networks:
@@ -140,8 +154,10 @@ services:
       REDIS_URL: redis://botini-redis:6379
       GOOGLE_DRIVE_API_KEY: ${BOTINI_GOOGLE_DRIVE_API_KEY:-}
     depends_on:
-      - botini-db
-      - botini-redis
+      botini-db:
+        condition: service_healthy
+      botini-redis:
+        condition: service_healthy
     volumes:
       - botini_media:/tmp/botini
     networks:
@@ -159,7 +175,8 @@ services:
     environment:
       ORIGIN: https://botini.club
     depends_on:
-      - botini-api
+      botini-api:
+        condition: service_started
     networks:
       - web
     restart: unless-stopped
@@ -201,6 +218,12 @@ services:
     networks:
       - web
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   umami:
     image: ghcr.io/umami-software/umami:postgresql-latest
@@ -210,7 +233,8 @@ services:
       DATABASE_TYPE: postgresql
       APP_SECRET: ${UMAMI_APP_SECRET}
     depends_on:
-      - umami-db
+      umami-db:
+        condition: service_healthy
     networks:
       - web
     restart: unless-stopped
