@@ -130,17 +130,36 @@ jobs:
       - name: Deploy to VPS
         run: |
           echo "🚀 Deploying to production VPS..."
-          ssh vps "cd ${{ secrets.VPS_PATH }} && \
-            echo 'Pulling latest changes...' && \
-            git pull origin master && \
-            echo 'Pulling sibling repos...' && \
-            cd ../backin15 && git pull origin master && \
-            cd ../Tempi.app && git pull origin master 2>/dev/null || echo 'Tempi.app not found' && \
-            cd ../botini.club && git pull origin master 2>/dev/null || echo 'botini.club not found' && \
-            cd ../XCSteward-website && git pull origin main 2>/dev/null || echo 'XCSteward-website not found' && \
-            cd ${{ secrets.VPS_PATH }} && \
-            echo 'Running deployment script...' && \
-            ./scripts/deploy.sh production"
+          ssh vps 'bash -se' <<'REMOTE'
+          cd "${{ secrets.VPS_PATH }}"
+
+          echo 'Pulling latest changes...'
+          git pull origin master
+
+          echo 'Pulling sibling repos...'
+          git -C ../backin15 pull origin master
+
+          if [ -d ../Tempi.app/.git ]; then
+            git -C ../Tempi.app pull origin master
+          else
+            echo 'Tempi.app not found'
+          fi
+
+          if [ -d ../botini.club/.git ]; then
+            git -C ../botini.club pull origin master
+          else
+            echo 'botini.club not found'
+          fi
+
+          if [ -d ../XCSteward-website/.git ]; then
+            git -C ../XCSteward-website pull origin main
+          else
+            git clone https://github.com/acyment/XCSteward-website.git ../XCSteward-website
+          fi
+
+          echo 'Running deployment script...'
+          ./scripts/deploy.sh production
+          REMOTE
 
       - name: Verify deployment
         run: |
