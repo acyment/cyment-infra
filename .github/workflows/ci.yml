@@ -142,10 +142,10 @@ jobs:
           FICHUS_BRANCH=main
           BOTINI_BRANCH=main
           XCSTEWARD_BRANCH=main
-          BACKIN15_REPO=https://github.com/acyment/backin15.git
-          TEMPI_REPO=https://github.com/acyment/Tempi.app.git
-          FICHUS_REPO=https://github.com/acyment/fichus.git
-          BOTINI_REPO=https://github.com/acyment/botini.club.git
+          BACKIN15_REPO=git@github.com:acyment/backin15.git
+          TEMPI_REPO=git@github.com:acyment/Tempi.app.git
+          FICHUS_REPO=git@github.com:acyment/fichus.git
+          BOTINI_REPO=git@github.com:acyment/botini.club.git
           XCSTEWARD_REPO=https://github.com/acyment/XCSteward-website.git
 
           ensure_repo() {
