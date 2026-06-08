@@ -94,6 +94,11 @@ jobs:
           docker pull redis:8-alpine
           echo "✓ Redis 8 image available"
 
+      - name: Test Bun image pull
+        run: |
+          docker pull oven/bun:1.3-alpine
+          echo "✓ Bun image available"
+
       - name: Summary
         run: |
           echo "================================"
@@ -103,7 +108,7 @@ jobs:
           echo "✓ Base images verified"
           echo "⚠️  Private repo builds skipped (expected in CI)"
           echo ""
-          echo "Note: backin15 and botini.club are private repos"
+          echo "Note: backin15, fichus, and botini.club are private repos"
           echo "      and will be built in production deployment"
 
   deploy:
@@ -132,32 +137,80 @@ jobs:
           echo "🚀 Deploying to production VPS..."
           ssh vps 'bash -se' <<'REMOTE'
           cd "${{ secrets.VPS_PATH }}"
+          BACKIN15_BRANCH=master
+          TEMPI_BRANCH=master
+          FICHUS_BRANCH=main
+          BOTINI_BRANCH=main
+          XCSTEWARD_BRANCH=main
 
+          pull_repo() {
+            local path="$1"
+            local branch="$2"
+            local label="$3"
+            local required="${4:-true}"
+
+            if [ -d "$path/.git" ]; then
+              if ! git -C "$path" fetch origin "$branch"; then
+                if [ "$required" = "true" ]; then
+                  echo "$label pull failed"
+                  exit 1
+                fi
+                echo "$label pull failed"
+                return
+              fi
+
+              if git -C "$path" show-ref --verify --quiet "refs/heads/$branch"; then
+                if ! git -C "$path" checkout "$branch"; then
+                  if [ "$required" = "true" ]; then
+                    echo "$label pull failed"
+                    exit 1
+                  fi
+                  echo "$label pull failed"
+                  return
+                fi
+              else
+                if ! git -C "$path" checkout -B "$branch" "origin/$branch"; then
+                  if [ "$required" = "true" ]; then
+                    echo "$label pull failed"
+                    exit 1
+                  fi
+                  echo "$label pull failed"
+                  return
+                fi
+              fi
+
+              if ! git -C "$path" pull --ff-only origin "$branch"; then
+                if [ "$required" = "true" ]; then
+                  echo "$label pull failed"
+                  exit 1
+                fi
+                echo "$label pull failed"
+              fi
+            else
+              if [ "$required" = "true" ]; then
+                echo "$label not found at $path"
+                exit 1
+              fi
+              echo "$label not found"
+            fi
+          }
           echo 'Pulling latest changes...'
           git pull origin master
 
           echo 'Pulling sibling repos...'
-          git -C ../backin15 pull origin master
-
-          if [ -d ../Tempi.app/.git ]; then
-            git -C ../Tempi.app pull origin master || echo 'Tempi.app pull failed'
-          else
-            echo 'Tempi.app not found'
-          fi
-
-          if [ -d ../botini.club/.git ]; then
-            git -C ../botini.club pull origin master || echo 'botini.club pull failed'
-          else
-            echo 'botini.club not found'
-          fi
+          pull_repo ../backin15 "$BACKIN15_BRANCH" backin15
+          pull_repo ../Tempi.app "$TEMPI_BRANCH" Tempi.app false
+          pull_repo ../fichus "$FICHUS_BRANCH" fichus
+          pull_repo ../botini.club "$BOTINI_BRANCH" botini.club
 
           if [ -d ../XCSteward-website/.git ]; then
-            git -C ../XCSteward-website pull origin main
+            pull_repo ../XCSteward-website "$XCSTEWARD_BRANCH" XCSteward-website
           else
             if [ -e ../XCSteward-website ]; then
               mv ../XCSteward-website "../XCSteward-website.pre-git.$(date +%Y%m%d%H%M%S)"
             fi
             git clone https://github.com/acyment/XCSteward-website.git ../XCSteward-website
+            pull_repo ../XCSteward-website "$XCSTEWARD_BRANCH" XCSteward-website
           fi
 
           echo 'Running deployment script...'
@@ -170,4 +223,5 @@ jobs:
           echo ""
           echo "Services:"
           echo "  - BackIn15: https://backin15.app"
+          echo "  - Fichus Feria: https://feria.fichusapp.com/healthz"
           ssh vps "cd ${{ secrets.VPS_PATH }} && docker compose ps"
