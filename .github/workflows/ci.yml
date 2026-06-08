@@ -154,6 +154,9 @@ jobs:
           if [ -d ../XCSteward-website/.git ]; then
             git -C ../XCSteward-website pull origin main
           else
+            if [ -e ../XCSteward-website ]; then
+              mv ../XCSteward-website "../XCSteward-website.pre-git.$(date +%Y%m%d%H%M%S)"
+            fi
             git clone https://github.com/acyment/XCSteward-website.git ../XCSteward-website
           fi
 
