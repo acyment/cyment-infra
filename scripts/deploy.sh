@@ -95,7 +95,14 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
     echo ""
     echo "🏗️  Building and deploying..."
     docker compose -f "$COMPOSE_FILE" up -d --build --wait --wait-timeout "${COMPOSE_WAIT_TIMEOUT:-180}"
-    
+
+    # The Caddyfile is bind-mounted, so `up -d` does not recreate the caddy
+    # container when only its contents change. Reload Caddy explicitly so
+    # Caddyfile edits (e.g. redirects) actually take effect. `caddy reload`
+    # validates first and keeps the running config if the new one is invalid.
+    echo "🔁 Reloading Caddy configuration..."
+    docker compose -f "$COMPOSE_FILE" exec -T caddy caddy reload --config /etc/caddy/Caddyfile
+
     # Check health
     echo ""
     echo "📊 Service status:"
