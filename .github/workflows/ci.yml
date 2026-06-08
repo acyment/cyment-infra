@@ -142,15 +142,44 @@ jobs:
           FICHUS_BRANCH=main
           BOTINI_BRANCH=main
           XCSTEWARD_BRANCH=main
+          BACKIN15_REPO=https://github.com/acyment/backin15.git
+          TEMPI_REPO=https://github.com/acyment/Tempi.app.git
+          FICHUS_REPO=https://github.com/acyment/fichus.git
+          BOTINI_REPO=https://github.com/acyment/botini.club.git
+          XCSTEWARD_REPO=https://github.com/acyment/XCSteward-website.git
 
-          pull_repo() {
+          ensure_repo() {
             local path="$1"
-            local branch="$2"
-            local label="$3"
-            local required="${4:-true}"
+            local repo_url="$2"
+            local branch="$3"
+            local label="$4"
+            local required="${5:-true}"
 
-            if [ -d "$path/.git" ]; then
-              if ! git -C "$path" fetch origin "$branch"; then
+            if [ ! -d "$path/.git" ]; then
+              if [ -e "$path" ]; then
+                mv "$path" "${path}.pre-git.$(date +%Y%m%d%H%M%S)"
+              fi
+              if ! git clone "$repo_url" "$path"; then
+                if [ "$required" = "true" ]; then
+                  echo "$label clone failed"
+                  exit 1
+                fi
+                echo "$label clone failed"
+                return
+              fi
+            fi
+
+            if ! git -C "$path" fetch origin "$branch"; then
+              if [ "$required" = "true" ]; then
+                echo "$label pull failed"
+                exit 1
+              fi
+              echo "$label pull failed"
+              return
+            fi
+
+            if git -C "$path" show-ref --verify --quiet "refs/heads/$branch"; then
+              if ! git -C "$path" checkout "$branch"; then
                 if [ "$required" = "true" ]; then
                   echo "$label pull failed"
                   exit 1
@@ -158,60 +187,34 @@ jobs:
                 echo "$label pull failed"
                 return
               fi
-
-              if git -C "$path" show-ref --verify --quiet "refs/heads/$branch"; then
-                if ! git -C "$path" checkout "$branch"; then
-                  if [ "$required" = "true" ]; then
-                    echo "$label pull failed"
-                    exit 1
-                  fi
-                  echo "$label pull failed"
-                  return
-                fi
-              else
-                if ! git -C "$path" checkout -B "$branch" "origin/$branch"; then
-                  if [ "$required" = "true" ]; then
-                    echo "$label pull failed"
-                    exit 1
-                  fi
-                  echo "$label pull failed"
-                  return
-                fi
-              fi
-
-              if ! git -C "$path" pull --ff-only origin "$branch"; then
+            else
+              if ! git -C "$path" checkout -B "$branch" "origin/$branch"; then
                 if [ "$required" = "true" ]; then
                   echo "$label pull failed"
                   exit 1
                 fi
                 echo "$label pull failed"
+                return
               fi
-            else
+            fi
+
+            if ! git -C "$path" pull --ff-only origin "$branch"; then
               if [ "$required" = "true" ]; then
-                echo "$label not found at $path"
+                echo "$label pull failed"
                 exit 1
               fi
-              echo "$label not found"
+              echo "$label pull failed"
             fi
           }
           echo 'Pulling latest changes...'
           git pull origin master
 
           echo 'Pulling sibling repos...'
-          pull_repo ../backin15 "$BACKIN15_BRANCH" backin15
-          pull_repo ../Tempi.app "$TEMPI_BRANCH" Tempi.app false
-          pull_repo ../fichus "$FICHUS_BRANCH" fichus
-          pull_repo ../botini.club "$BOTINI_BRANCH" botini.club
-
-          if [ -d ../XCSteward-website/.git ]; then
-            pull_repo ../XCSteward-website "$XCSTEWARD_BRANCH" XCSteward-website
-          else
-            if [ -e ../XCSteward-website ]; then
-              mv ../XCSteward-website "../XCSteward-website.pre-git.$(date +%Y%m%d%H%M%S)"
-            fi
-            git clone https://github.com/acyment/XCSteward-website.git ../XCSteward-website
-            pull_repo ../XCSteward-website "$XCSTEWARD_BRANCH" XCSteward-website
-          fi
+          ensure_repo ../backin15 "$BACKIN15_REPO" "$BACKIN15_BRANCH" backin15
+          ensure_repo ../Tempi.app "$TEMPI_REPO" "$TEMPI_BRANCH" Tempi.app false
+          ensure_repo ../fichus "$FICHUS_REPO" "$FICHUS_BRANCH" fichus
+          ensure_repo ../botini.club "$BOTINI_REPO" "$BOTINI_BRANCH" botini.club
+          ensure_repo ../XCSteward-website "$XCSTEWARD_REPO" "$XCSTEWARD_BRANCH" XCSteward-website
 
           echo 'Running deployment script...'
           ./scripts/deploy.sh production
