@@ -314,6 +314,46 @@
           }
         dest: /etc/logrotate.d/docker-container
 
+    - name: Configure weekly Docker cleanup service
+      copy:
+        content: |
+          [Unit]
+          Description=Prune unused Docker images, containers, networks, and build cache
+          Requires=docker.service
+          After=docker.service
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/bin/docker system prune --all --force --filter until=168h
+          ExecStart=/usr/bin/docker builder prune --all --force --filter until=168h
+        dest: /etc/systemd/system/docker-cleanup.service
+        mode: '0644'
+      notify: reload systemd
+
+    - name: Configure weekly Docker cleanup timer
+      copy:
+        content: |
+          [Unit]
+          Description=Run Docker cleanup weekly
+
+          [Timer]
+          OnCalendar=weekly
+          Persistent=true
+          RandomizedDelaySec=1h
+
+          [Install]
+          WantedBy=timers.target
+        dest: /etc/systemd/system/docker-cleanup.timer
+        mode: '0644'
+      notify: reload systemd
+
+    - name: Enable weekly Docker cleanup timer
+      systemd:
+        name: docker-cleanup.timer
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
     # ============================================
     # AUDITING & MONITORING
     # ============================================
@@ -350,6 +390,10 @@
         - { path: "/etc/passwd", mode: "0644" }
 
   handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+
     - name: reload ssh
       service:
         name: ssh
