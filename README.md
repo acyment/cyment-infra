@@ -12,6 +12,7 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
 | **Tempi Timer** | Static Svelte timer app | https://timer.cyment.com |
 | **BackIn15** | Session sharing web app | https://backin15.app |
 | **Fichus Feria** | Ephemeral nearby sticker-trade matching API | https://feria.fichusapp.com |
+| **Feliche Site** | Static landing, privacy, and support pages | https://feliche.cyment.com |
 
 ## Quick Start
 
@@ -81,6 +82,7 @@ nano .env
 Ensure these A records point to your VPS IP:
 
 - `timer.cyment.com`
+- `feliche.cyment.com`
 - `backin15.app`
 - `www.backin15.app` → redirects to `backin15.app`
 - `feria.fichusapp.com`
@@ -136,6 +138,20 @@ docker compose up -d --build backin15-app caddy
 docker compose up -d --build fichus-feria caddy
 ```
 
+### Feliche Static Site
+
+- **URL**: https://feliche.cyment.com
+- **Content root**: `./sites/feliche`
+- **Pages**:
+  - `/` landing page
+  - `/privacy/` public privacy policy
+  - `/support/` support page
+
+**Deployment:**
+```bash
+docker compose up -d --force-recreate caddy
+```
+
 ## Development
 
 ### Local Development
@@ -145,7 +161,7 @@ docker compose up -d --build fichus-feria caddy
 docker compose -f docker-compose.local.yml up -d
 
 # Access services
-# - http://localhost:8080 - Landing page
+# - http://localhost:8080 - Feliche landing page
 # - http://localhost:5002 - BackIn15
 # - http://localhost:8787/healthz - Fichus Feria API
 ```

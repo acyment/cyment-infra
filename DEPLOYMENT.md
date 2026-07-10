@@ -70,6 +70,7 @@ docker compose ps
 
 # Test endpoints
 curl -I https://timer.cyment.com
+curl -I https://feliche.cyment.com
 curl -I https://backin15.app
 curl -I https://feria.fichusapp.com/healthz
 curl -I https://botini.club
@@ -325,6 +326,7 @@ git push origin main
 ssh user@vps-ip
 docker compose ps
 curl -I https://timer.cyment.com
+curl -I https://feliche.cyment.com
 ```
 
 ## Advanced Configuration

@@ -12,5 +12,6 @@
 
 # Landing page on port 8080
 :8080 {
-    respond "Local Cyment Infrastructure - Landing Page" 200
+    root * /srv/sites/feliche
+    file_server
 }
