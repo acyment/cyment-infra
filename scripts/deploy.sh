@@ -29,6 +29,43 @@ require_env() {
     fi
 }
 
+cleanup_stale_replacement_containers() {
+    local service_name
+    local stale_names
+    local found=0
+    local services=(
+        caddy
+        tempi-app
+        backin15-app
+        fichus-feria
+        botini-db
+        botini-redis
+        botini-api
+        botini-worker
+        botini-frontend
+        xcsteward-app
+        umami-db
+        umami
+    )
+
+    for service_name in "${services[@]}"; do
+        stale_names=$(docker ps -a --format '{{.Names}}' | grep -E "^[0-9a-f]{12}_${service_name}$" || true)
+        if [ -n "$stale_names" ]; then
+            found=1
+            echo "🧹 Removing stale replacement container(s) for ${service_name}:"
+            echo "$stale_names"
+            while IFS= read -r stale_name; do
+                [ -n "$stale_name" ] || continue
+                docker rm -f "$stale_name" > /dev/null
+            done <<< "$stale_names"
+        fi
+    done
+
+    if [ "$found" -eq 0 ]; then
+        echo "✓ No stale replacement containers found"
+    fi
+}
+
 if [ "$ENV" = "local" ]; then
     COMPOSE_FILE="docker-compose.local.yml"
     echo "🖥️  Deploying to LOCAL environment"
@@ -91,10 +128,13 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
     docker compose -f "$COMPOSE_FILE" config > /dev/null
     echo "✓ Configuration valid"
     
+    echo "🧹 Cleaning up stale Docker replacement containers..."
+    cleanup_stale_replacement_containers
+
     # Build and deploy
     echo ""
     echo "🏗️  Building and deploying..."
-    docker compose -f "$COMPOSE_FILE" up -d --build --wait --wait-timeout "${COMPOSE_WAIT_TIMEOUT:-180}"
+    docker compose -f "$COMPOSE_FILE" up -d --build --wait --wait-timeout "${COMPOSE_WAIT_TIMEOUT:-180}" --remove-orphans
 
     # The Caddyfile is bind-mounted as a single file. `git pull` replaces it via
     # an atomic rename, which creates a new inode the running container never
@@ -103,6 +143,7 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
     # re-binds the current Caddyfile and applies config edits (e.g. redirects).
     # TLS certs live in the caddy_data volume, so this is fast.
     echo "🔁 Recreating Caddy to apply Caddyfile changes..."
+    cleanup_stale_replacement_containers
     docker compose -f "$COMPOSE_FILE" up -d --force-recreate caddy
 
     # Check health
