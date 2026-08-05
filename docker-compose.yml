@@ -88,6 +88,48 @@ services:
       retries: 3
       start_period: 10s
 
+  network-db:
+    image: postgres:18-alpine
+    container_name: network-db
+    environment:
+      POSTGRES_USER: fichus_network
+      POSTGRES_PASSWORD: ${NETWORK_DB_PASSWORD}
+      POSTGRES_DB: fichus_network
+    volumes:
+      - network_pgdata:/var/lib/postgresql/data
+    networks:
+      - web
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fichus_network -d fichus_network"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  fichus-network:
+    build:
+      context: ../fichus/backend/network
+      dockerfile: Dockerfile
+    container_name: fichus-network
+    environment:
+      PORT: 8788
+      DATABASE_URL: postgresql://fichus_network:${NETWORK_DB_PASSWORD}@network-db:5432/fichus_network
+      NETWORK_SERVER_SECRET: ${NETWORK_SERVER_SECRET}
+      NETWORK_BETA_OPEN: ${NETWORK_BETA_OPEN:-false}
+    depends_on:
+      network-db:
+        condition: service_healthy
+    networks:
+      - web
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bun", "--eval", "fetch('http://127.0.0.1:8788/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   botini-db:
     image: postgres:18-alpine
     container_name: botini-db
@@ -250,3 +292,4 @@ volumes:
   botini_pgdata:
   botini_media:
   umami_pgdata:
+  network_pgdata:

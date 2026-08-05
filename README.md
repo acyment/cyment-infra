@@ -12,6 +12,7 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
 | **Tempi Timer** | Static Svelte timer app | https://timer.cyment.com |
 | **BackIn15** | Session sharing web app | https://backin15.app |
 | **Fichus Feria** | Ephemeral nearby sticker-trade matching API | https://feria.fichusapp.com |
+| **Fichus Mi red de canjes** | Durable private-network matching backend (see `../fichus/docs/private-network-contract-gate.md`) | https://network.fichusapp.com |
 | **Feliche Site** | Static landing, privacy, and support pages | https://feliche.cyment.com |
 
 ## Quick Start
@@ -86,6 +87,7 @@ Ensure these A records point to your VPS IP:
 - `backin15.app`
 - `www.backin15.app` → redirects to `backin15.app`
 - `feria.fichusapp.com`
+- `network.fichusapp.com`
 
 ## Services
 
@@ -136,6 +138,29 @@ docker compose up -d --build backin15-app caddy
 **Deployment:**
 ```bash
 docker compose up -d --build fichus-feria caddy
+```
+
+### Fichus Mi red de canjes backend
+
+- **URL**: https://network.fichusapp.com
+- **Build Context**: `../fichus/backend/network`
+- **Tech Stack**: Bun + TypeScript + PostgreSQL (`network-db`, separate from every
+  other database in this file)
+- **Health**: `GET /healthz`
+- **Release contract**: `../fichus/docs/private-network-contract-gate.md` — the
+  mobile apps' `networkEnabled` flag defaults OFF regardless of this backend
+  being reachable; this service alone does not make the feature live for real
+  users.
+
+**Configuration (in `.env`):**
+- `NETWORK_DB_PASSWORD` - required
+- `NETWORK_SERVER_SECRET` - required, 32+ chars (`openssl rand -base64 32`)
+- `NETWORK_BETA_OPEN` - keep `false` outside a deliberately scoped rehearsal/beta
+  window (see the contract gate's monetization row)
+
+**Deployment:**
+```bash
+docker compose up -d --build network-db fichus-network caddy
 ```
 
 ### Feliche Static Site
