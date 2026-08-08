@@ -14,6 +14,7 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
 | **Fichus Feria** | Ephemeral nearby sticker-trade matching API | https://feria.fichusapp.com |
 | **Fichus Mi red de canjes** | Durable private-network matching backend (see `../fichus/docs/private-network-contract-gate.md`) | https://network.fichusapp.com |
 | **Feliche Site** | Static landing, privacy, and support pages | https://feliche.cyment.com |
+| **Pizcas Site** | Static landing, privacy, and support pages | https://pizcas.cyment.com |
 
 ## Quick Start
 
@@ -84,6 +85,7 @@ Ensure these A records point to your VPS IP:
 
 - `timer.cyment.com`
 - `feliche.cyment.com`
+- `pizcas.cyment.com`
 - `backin15.app`
 - `www.backin15.app` → redirects to `backin15.app`
 - `feria.fichusapp.com`
@@ -167,6 +169,20 @@ docker compose up -d --build network-db fichus-network caddy
 
 - **URL**: https://feliche.cyment.com
 - **Content root**: `./sites/feliche`
+- **Pages**:
+  - `/` landing page
+  - `/privacy/` public privacy policy
+  - `/support/` support page
+
+**Deployment:**
+```bash
+docker compose up -d --force-recreate caddy
+```
+
+### Pizcas Static Site
+
+- **URL**: https://pizcas.cyment.com
+- **Content root**: `./sites/pizcas`
 - **Pages**:
   - `/` landing page
   - `/privacy/` public privacy policy

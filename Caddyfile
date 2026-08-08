@@ -14,6 +14,17 @@ feliche.cyment.com {
 	file_server
 }
 
+pizcas.cyment.com {
+	encode gzip
+	root * /srv/sites/pizcas
+
+	# Keep canonical static URLs with trailing slashes for nested pages.
+	redir /privacy /privacy/ permanent
+	redir /support /support/ permanent
+
+	file_server
+}
+
 backin15.app {
 	encode gzip
 	reverse_proxy backin15-app:80
