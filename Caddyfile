@@ -14,9 +14,9 @@ feliche.cyment.com {
 	file_server
 }
 
-pizcas.cyment.com {
+bitzi.cyment.com {
 	encode gzip
-	root * /srv/sites/pizcas
+	root * /srv/sites/bitzi
 
 	# Keep canonical static URLs with trailing slashes for nested pages.
 	redir /privacy /privacy/ permanent
