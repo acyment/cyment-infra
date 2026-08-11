@@ -129,11 +129,11 @@ umami.cyment.com {
 	reverse_proxy umami:3000
 }
 
-# Twenty CRM
-crm.cyment.com {
-	encode gzip
-	reverse_proxy twenty-server:3000
-}
+# Twenty CRM — temporarily disabled (see docker-compose.yml), no DNS record yet either.
+# crm.cyment.com {
+# 	encode gzip
+# 	reverse_proxy twenty-server:3000
+# }
 
 # www.xcsteward.com removed - no DNS record configured
 # To enable: Add DNS A record for www.xcsteward.com, then uncomment:

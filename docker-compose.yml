@@ -282,91 +282,93 @@ services:
       - web
     restart: unless-stopped
 
-  # Twenty CRM (crm.cyment.com)
-  twenty-db:
-    image: postgres:16
-    container_name: twenty-db
-    environment:
-      POSTGRES_USER: twenty
-      POSTGRES_PASSWORD: ${TWENTY_DB_PASSWORD}
-      POSTGRES_DB: twenty
-    volumes:
-      - twenty_pgdata:/var/lib/postgresql/data
-    networks:
-      - web
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U twenty -d twenty"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
-  twenty-redis:
-    image: redis:8-alpine
-    container_name: twenty-redis
-    command: ["--maxmemory-policy", "noeviction"]
-    networks:
-      - web
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  twenty-server:
-    image: twentycrm/twenty:${TWENTY_TAG:-latest}
-    container_name: twenty-server
-    environment:
-      NODE_PORT: 3000
-      PG_DATABASE_URL: postgresql://twenty:${TWENTY_DB_PASSWORD}@twenty-db:5432/twenty
-      REDIS_URL: redis://twenty-redis:6379
-      SERVER_URL: https://crm.cyment.com
-      APP_SECRET: ${TWENTY_APP_SECRET}
-      ENCRYPTION_KEY: ${TWENTY_ENCRYPTION_KEY}
-      STORAGE_TYPE: local
-    volumes:
-      - twenty_server_data:/app/packages/twenty-server/.local-storage
-    depends_on:
-      twenty-db:
-        condition: service_healthy
-      twenty-redis:
-        condition: service_healthy
-    networks:
-      - web
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://127.0.0.1:3000/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-      start_period: 30s
-
-  twenty-worker:
-    image: twentycrm/twenty:${TWENTY_TAG:-latest}
-    container_name: twenty-worker
-    command: ["yarn", "worker:prod"]
-    environment:
-      PG_DATABASE_URL: postgresql://twenty:${TWENTY_DB_PASSWORD}@twenty-db:5432/twenty
-      REDIS_URL: redis://twenty-redis:6379
-      SERVER_URL: https://crm.cyment.com
-      APP_SECRET: ${TWENTY_APP_SECRET}
-      ENCRYPTION_KEY: ${TWENTY_ENCRYPTION_KEY}
-      STORAGE_TYPE: local
-      DISABLE_DB_MIGRATIONS: "true"
-      DISABLE_CRON_JOBS_REGISTRATION: "true"
-    volumes:
-      - twenty_server_data:/app/packages/twenty-server/.local-storage
-    depends_on:
-      twenty-db:
-        condition: service_healthy
-      twenty-server:
-        condition: service_healthy
-    networks:
-      - web
-    restart: unless-stopped
+  # Twenty CRM (crm.cyment.com) — temporarily disabled, VPS RAM headroom too
+  # tight (server+worker use ~1.7GB combined). Re-enable once the VPS is
+  # resized; data is preserved in the twenty_pgdata/twenty_server_data volumes.
+  # twenty-db:
+  #   image: postgres:16
+  #   container_name: twenty-db
+  #   environment:
+  #     POSTGRES_USER: twenty
+  #     POSTGRES_PASSWORD: ${TWENTY_DB_PASSWORD}
+  #     POSTGRES_DB: twenty
+  #   volumes:
+  #     - twenty_pgdata:/var/lib/postgresql/data
+  #   networks:
+  #     - web
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U twenty -d twenty"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 20s
+  #
+  # twenty-redis:
+  #   image: redis:8-alpine
+  #   container_name: twenty-redis
+  #   command: ["--maxmemory-policy", "noeviction"]
+  #   networks:
+  #     - web
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  #
+  # twenty-server:
+  #   image: twentycrm/twenty:${TWENTY_TAG:-latest}
+  #   container_name: twenty-server
+  #   environment:
+  #     NODE_PORT: 3000
+  #     PG_DATABASE_URL: postgresql://twenty:${TWENTY_DB_PASSWORD}@twenty-db:5432/twenty
+  #     REDIS_URL: redis://twenty-redis:6379
+  #     SERVER_URL: https://crm.cyment.com
+  #     APP_SECRET: ${TWENTY_APP_SECRET}
+  #     ENCRYPTION_KEY: ${TWENTY_ENCRYPTION_KEY}
+  #     STORAGE_TYPE: local
+  #   volumes:
+  #     - twenty_server_data:/app/packages/twenty-server/.local-storage
+  #   depends_on:
+  #     twenty-db:
+  #       condition: service_healthy
+  #     twenty-redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - web
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "curl", "--fail", "http://127.0.0.1:3000/healthz"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 20
+  #     start_period: 30s
+  #
+  # twenty-worker:
+  #   image: twentycrm/twenty:${TWENTY_TAG:-latest}
+  #   container_name: twenty-worker
+  #   command: ["yarn", "worker:prod"]
+  #   environment:
+  #     PG_DATABASE_URL: postgresql://twenty:${TWENTY_DB_PASSWORD}@twenty-db:5432/twenty
+  #     REDIS_URL: redis://twenty-redis:6379
+  #     SERVER_URL: https://crm.cyment.com
+  #     APP_SECRET: ${TWENTY_APP_SECRET}
+  #     ENCRYPTION_KEY: ${TWENTY_ENCRYPTION_KEY}
+  #     STORAGE_TYPE: local
+  #     DISABLE_DB_MIGRATIONS: "true"
+  #     DISABLE_CRON_JOBS_REGISTRATION: "true"
+  #   volumes:
+  #     - twenty_server_data:/app/packages/twenty-server/.local-storage
+  #   depends_on:
+  #     twenty-db:
+  #       condition: service_healthy
+  #     twenty-server:
+  #       condition: service_healthy
+  #   networks:
+  #     - web
+  #   restart: unless-stopped
 
 networks:
   web:
@@ -379,5 +381,7 @@ volumes:
   botini_media:
   umami_pgdata:
   network_pgdata:
+  # Kept so the disabled Twenty CRM data isn't orphaned/GC'd; not referenced
+  # by any active service while twenty-* is commented out above.
   twenty_pgdata:
   twenty_server_data:
