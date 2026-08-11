@@ -76,6 +76,7 @@ curl -I https://feria.fichusapp.com/healthz
 curl -I https://botini.club
 curl -I https://xcsteward.com
 curl -I https://umami.cyment.com
+curl -I https://crm.cyment.com
 ```
 
 ## SSH Key Setup
@@ -217,6 +218,8 @@ docker compose logs tempi-app
 docker compose logs backin15-app
 docker compose logs fichus-feria
 docker compose logs botini-api
+docker compose logs twenty-server
+docker compose logs twenty-worker
 ```
 
 ### Common Issues

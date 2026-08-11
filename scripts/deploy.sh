@@ -46,6 +46,10 @@ cleanup_stale_replacement_containers() {
         xcsteward-app
         umami-db
         umami
+        twenty-db
+        twenty-redis
+        twenty-server
+        twenty-worker
     )
 
     for service_name in "${services[@]}"; do
@@ -123,6 +127,11 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
     require_env "UMAMI_DB_PASSWORD"
     require_env "UMAMI_APP_SECRET"
 
+    # Check required Twenty CRM secrets
+    require_env "TWENTY_DB_PASSWORD"
+    require_env "TWENTY_APP_SECRET"
+    require_env "TWENTY_ENCRYPTION_KEY"
+
     # Validate compose file
     echo "Validating Docker Compose configuration..."
     docker compose -f "$COMPOSE_FILE" config > /dev/null
@@ -172,6 +181,7 @@ elif [ "$ENV" = "production" ] || [ "$ENV" = "prod" ]; then
     echo "  - Botini Club:  https://botini.club"
     echo "  - XCSteward:    https://xcsteward.com"
     echo "  - Umami:        https://umami.cyment.com"
+    echo "  - Twenty CRM:   https://crm.cyment.com"
     echo ""
     echo "Commands:"
     echo "  - View logs:   docker compose logs -f"

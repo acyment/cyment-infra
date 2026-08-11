@@ -15,6 +15,7 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
 | **Fichus Mi red de canjes** | Durable private-network matching backend (see `../fichus/docs/private-network-contract-gate.md`) | https://network.fichusapp.com |
 | **Feliche Site** | Static landing, privacy, and support pages | https://feliche.cyment.com |
 | **Bitzi Site** | Static landing, privacy, and support pages | https://bitzi.cyment.com |
+| **Twenty CRM** | Self-hosted CRM (server + worker + Postgres + Redis) | https://crm.cyment.com |
 
 ## Quick Start
 
@@ -90,6 +91,7 @@ Ensure these A records point to your VPS IP:
 - `www.backin15.app` → redirects to `backin15.app`
 - `feria.fichusapp.com`
 - `network.fichusapp.com`
+- `crm.cyment.com`
 
 ## Services
 
@@ -191,6 +193,23 @@ docker compose up -d --force-recreate caddy
 **Deployment:**
 ```bash
 docker compose up -d --force-recreate caddy
+```
+
+### Twenty CRM
+
+- **URL**: https://crm.cyment.com
+- **Image**: `twentycrm/twenty:${TWENTY_TAG:-latest}` (server + worker), `postgres:16`, `redis:8-alpine`
+- **Storage**: local volume (`twenty_server_data`); no S3 configured
+
+**Configuration (in `.env`):**
+- `TWENTY_DB_PASSWORD` - required
+- `TWENTY_APP_SECRET` - required (`openssl rand -base64 32`)
+- `TWENTY_ENCRYPTION_KEY` - required (`openssl rand -base64 32`)
+- `TWENTY_TAG` - optional, pin to a specific release instead of `:latest`
+
+**Deployment:**
+```bash
+docker compose up -d --build twenty-db twenty-redis twenty-server twenty-worker caddy
 ```
 
 ## Development
