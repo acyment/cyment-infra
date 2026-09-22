@@ -1,14 +1,14 @@
 # Deployment Guide
 
-Complete setup guide for automated CI/CD deployment to VPS.
+Complete setup guide for validated, manually promoted deployment to the VPS.
 
 ## Overview
 
-The deployment pipeline automatically:
-- Validates configuration on every push
-- Deploys to production VPS after tests pass
-- Updates all repositories (cyment-infra + sibling repos)
-- Rebuilds and restarts all Docker services
+The pipeline validates configuration on every push and pull request. Production
+deployment is manual: run the workflow on `main`/`master` with
+`deploy_production=true`. The protected production environment then updates the
+infrastructure checkout, branch-tracked sibling repositories, and the exact
+CrowdTimer revision pinned in `deploy/versions.env` before rebuilding services.
 
 ## Prerequisites
 
@@ -52,6 +52,7 @@ git clone https://github.com/acyment/backin15.git ../backin15
 git clone https://github.com/acyment/fichus.git ../fichus
 git clone https://github.com/acyment/botini.club.git ../botini.club
 git clone https://github.com/acyment/XCSteward-website.git ../XCSteward-website
+git clone https://github.com/acyment/CrowdTimer.git ../CrowdTimer
 
 # Configure environment
 cp .env.example .env
@@ -59,7 +60,7 @@ nano .env  # Add your production secrets
 
 # Initial deployment
 ./scripts/setup.sh
-./scripts/deploy.sh production
+# Trigger the protected production workflow after configuring its secrets.
 ```
 
 ### 3. Verify Services
@@ -77,6 +78,9 @@ curl -I https://botini.club
 curl -I https://xcsteward.com
 curl -I https://umami.cyment.com
 curl -I https://crm.cyment.com
+curl -I https://crowdtimer.app
+curl -I https://live.crowdtimer.app/healthz
+curl -I https://pb.crowdtimer.app/api/health
 ```
 
 ## SSH Key Setup
@@ -133,6 +137,8 @@ Add these secrets:
 | `VPS_USER` | SSH username | `ubuntu` or `root` |
 | `VPS_SSH_KEY` | Private SSH key | Contents of `github-actions-deploy` file |
 | `VPS_PATH` | Path to repo on VPS | `/home/ubuntu/cyment/cyment-infra` |
+| `CROWDTIMER_ENV` | Multiline CrowdTimer environment | Contents matching `.env.crowdtimer.example` |
+| `CROWDTIMER_TUNNEL_TOKEN` | Named tunnel token | Cloudflare tunnel token for the admin route |
 
 **Adding `VPS_SSH_KEY`:**
 ```bash
@@ -158,12 +164,12 @@ Navigate to: `Settings → Environments → New environment`
 
 ## Deployment Workflow
 
-### Automatic Deployment
+### Manual Production Deployment
 
-When you push to `main` or `master`:
+After the desired infrastructure revision is merged:
 
 ```
-Push → GitHub Actions → Validate → Test → Deploy → Services Restarted
+Push → Validate/Test → Manual workflow approval → Deploy → Verify
 ```
 
 **Pipeline stages:**
@@ -177,7 +183,7 @@ Push → GitHub Actions → Validate → Test → Deploy → Services Restarted
    - Test health endpoints
    - Cleanup
 
-3. **Deploy** (5-10 min):
+3. **Deploy** (manual, 5-10 min):
    - SSH to VPS
    - Pull latest changes (cyment-infra + sibling repos)
    - Run deployment script
@@ -189,13 +195,12 @@ Push → GitHub Actions → Validate → Test → Deploy → Services Restarted
 
 ```bash
 # Trigger via GitHub UI
-Actions → CI/CD Pipeline → Run workflow → Branch: main
+Actions → CI/CD Pipeline → Run workflow → Branch: main/master
+# Set deploy_production=true
 
-# Or on VPS directly
-ssh user@vps-ip
-cd /path/to/cyment-infra
-git pull
-./scripts/deploy.sh production
+Direct edits, checkouts, and deployments on the VPS are not part of the release
+workflow. Make changes locally, commit and push them, then use the protected
+manual workflow so the repository remains the source of truth.
 ```
 
 ## Monitoring & Troubleshooting
@@ -280,27 +285,10 @@ docker compose build fichus-feria
 
 ### Rollback Procedure
 
-```bash
-# SSH to VPS
-ssh user@vps-ip
-cd /path/to/cyment-infra
-
-# Checkout previous commit
-git log --oneline -10  # Find good commit
-git checkout <commit-hash>
-
-# Or reset to previous
-git reset --hard HEAD~1
-
-# Redeploy
-./scripts/deploy.sh production
-
-# If sibling repos need rollback too
-cd ../Tempi.app && git checkout <commit> && cd -
-cd ../backin15 && git checkout <commit> && cd -
-cd ../fichus && git checkout <commit> && cd -
-cd ../botini.club && git checkout <commit> && cd -
-```
+Revert the infrastructure commit (and any affected sibling revision pin) in the
+local repositories, push the revert, then run the protected manual production
+workflow. CrowdTimer's first-cutover DNS rollback is documented separately in
+`CROWDTIMER_DEPLOYMENT.md`.
 
 ## Security Best Practices
 
@@ -316,13 +304,11 @@ cd ../botini.club && git checkout <commit> && cd -
 After initial setup, test the pipeline:
 
 ```bash
-# Make a small change
-echo "# Test deployment" >> README.md
-git add README.md
-git commit -m "Test deployment pipeline"
-git push origin main
+# Push a reviewed change and wait for validation to finish.
+git push origin master
 
-# Watch deployment
+# Manually dispatch CI/CD Pipeline with deploy_production=true, approve the
+# production environment, and watch deployment.
 # https://github.com/acyment/cyment-infra/actions
 
 # Verify on VPS

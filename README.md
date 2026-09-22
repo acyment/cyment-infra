@@ -16,6 +16,7 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
 | **Feliche Site** | Static landing, privacy, and support pages | https://feliche.cyment.com |
 | **Bitzi Site** | Static landing, privacy, and support pages | https://bitzi.cyment.com |
 | **Twenty CRM** | Self-hosted CRM (server + worker + Postgres + Redis) | https://crm.cyment.com |
+| **CrowdTimer** | Zoom timer app + PocketBase realtime backend | https://live.crowdtimer.app |
 
 ## Quick Start
 
@@ -39,6 +40,7 @@ Docker Compose setup for running multiple services on VPS B with Caddy reverse p
   - `../Tempi.app` - Tempi Timer source
   - `../backin15` - BackIn15 source
   - `../fichus` - Fichus source, including `backend/feria`
+  - `../CrowdTimer` - CrowdTimer source at the revision pinned in `deploy/versions.env`
 
 ## Setup
 
@@ -92,6 +94,12 @@ Ensure these A records point to your VPS IP:
 - `feria.fichusapp.com`
 - `network.fichusapp.com`
 - `crm.cyment.com`
+- `crowdtimer.app`
+- `live.crowdtimer.app`
+- `pb.crowdtimer.app`
+
+`pb-admin.crowdtimer.app` is created by its Cloudflare Tunnel route rather than
+as an A record to this VPS.
 
 ## Services
 
@@ -211,6 +219,30 @@ docker compose up -d --force-recreate caddy
 ```bash
 docker compose up -d --build twenty-db twenty-redis twenty-server twenty-worker caddy
 ```
+
+### CrowdTimer
+
+- **App**: https://live.crowdtimer.app
+- **Marketing**: https://crowdtimer.app
+- **Public PocketBase API/realtime**: https://pb.crowdtimer.app
+- **Protected PocketBase admin**: https://pb-admin.crowdtimer.app
+- **Build context**: `../CrowdTimer`, checked out at `CROWDTIMER_REF` from `deploy/versions.env`
+
+CrowdTimer uses the shared Caddy and `web` network. Its admin hostname is not
+routed by Caddy: `crowdtimer-cloudflared` publishes PocketBase through a named
+Cloudflare Tunnel protected by Access.
+
+Production configuration is supplied by the protected GitHub environment:
+
+- `CROWDTIMER_ENV` — the complete contents matching `.env.crowdtimer.example`
+- `CROWDTIMER_TUNNEL_TOKEN` — the remotely managed tunnel token
+
+To promote a release, update `CROWDTIMER_REF` to a full green CrowdTimer commit,
+merge that change, then manually run the `CI/CD Pipeline` workflow with
+`deploy_production=true` on `master`.
+
+The one-time tunnel/Access setup, first DNS cutover, and 24-hour rollback plan
+are documented in [CROWDTIMER_DEPLOYMENT.md](CROWDTIMER_DEPLOYMENT.md).
 
 ## Development
 
@@ -336,13 +368,12 @@ GitHub Actions workflow:
 - Checks for secrets in code
 - Verifies build process
 
-### Automated Deployment
+### Production Deployment
 
-On every push to `main` or `master` branch, the CI/CD pipeline automatically:
-1. Validates all configurations
-2. Runs smoke tests
-3. Deploys to production VPS
-4. Restarts all services
+Pushes and pull requests validate configuration and run smoke tests but never
+mutate production. To deploy, manually run the `CI/CD Pipeline` workflow on
+`main`/`master` with `deploy_production=true`. The protected production
+environment can require reviewer approval before the SSH deployment begins.
 
 **Required GitHub Secrets:**
 
@@ -352,6 +383,8 @@ On every push to `main` or `master` branch, the CI/CD pipeline automatically:
 | `VPS_USER` | SSH username |
 | `VPS_SSH_KEY` | Private SSH key for authentication |
 | `VPS_PATH` | Absolute path to cyment-infra on VPS (e.g., `/home/user/cyment-infra`) |
+| `CROWDTIMER_ENV` | Multiline CrowdTimer production environment file |
+| `CROWDTIMER_TUNNEL_TOKEN` | Token for the Access-protected PocketBase admin tunnel |
 
 **Setup:**
 1. Generate SSH key pair: `ssh-keygen -t ed25519 -C "github-actions" -f github-actions`
@@ -361,8 +394,10 @@ On every push to `main` or `master` branch, the CI/CD pipeline automatically:
 5. Create GitHub environment named "production" for deployment protection rules
 
 **Deployment Flow:**
-- Pulls latest changes from this repository
-- Updates sibling repositories (Tempi.app, backin15, fichus, botini.club)
+- Pulls the selected `main`/`master` infrastructure revision
+- Updates branch-tracked sibling repositories
+- Checks out CrowdTimer at its exact committed revision pin
+- Atomically stages CrowdTimer secrets from the protected GitHub environment
 - Runs `./scripts/deploy.sh production`
 - Shows service status
 

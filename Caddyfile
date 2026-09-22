@@ -52,6 +52,49 @@ network.fichusapp.com {
 	reverse_proxy fichus-network:8788
 }
 
+# CrowdTimer keeps its reviewer-facing app, public PocketBase API, and
+# marketing site on separate origins. The PocketBase admin UI is deliberately
+# not routed here; it is reachable only through the Access-protected tunnel.
+(crowdtimer_static_headers) {
+	header {
+		X-Content-Type-Options nosniff
+		Cross-Origin-Opener-Policy same-origin
+	}
+}
+
+crowdtimer.app, www.crowdtimer.app {
+	import crowdtimer_static_headers
+	encode zstd gzip
+	root * /srv/crowdtimer-site
+	file_server
+}
+
+live.crowdtimer.app {
+	# The Express server owns CSP and the complete security-header set.
+	encode zstd gzip
+
+	@blocked_pb path /pb*
+	handle @blocked_pb {
+		respond 404
+	}
+
+	handle {
+		reverse_proxy crowdtimer-app:3000
+	}
+}
+
+pb.crowdtimer.app {
+	import crowdtimer_static_headers
+	encode zstd gzip
+
+	@blocked_admin path /_*
+	handle @blocked_admin {
+		respond 404
+	}
+
+	reverse_proxy crowdtimer-pocketbase:8090
+}
+
 publiqueitor.cyment.com {
 	@aasa path /.well-known/apple-app-site-association /apple-app-site-association
 	header @aasa Content-Type application/json

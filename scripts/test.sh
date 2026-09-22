@@ -10,6 +10,13 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 FAILED=0
+PROD_COMPOSE=(
+    docker compose
+    --env-file .env.example
+    --env-file deploy/versions.env
+    --env-file .env.crowdtimer.example
+    -f docker-compose.yml
+)
 
 # Function to print status
 print_status() {
@@ -41,7 +48,7 @@ run_check() {
 # Test 1: Validate Docker Compose files
 echo ""
 echo "📋 Test 1: Validating Docker Compose configurations"
-if docker compose -f docker-compose.yml config > /dev/null 2>&1; then
+if "${PROD_COMPOSE[@]}" config > /dev/null 2>&1; then
     print_status 0 "Production Docker Compose is valid"
 else
     print_status 1 "Production Docker Compose is valid"
@@ -59,6 +66,8 @@ echo "📁 Test 2: Checking required files"
 [ -f "Caddyfile" ] && print_status 0 "Caddyfile exists" || print_status 1 "Caddyfile missing"
 [ -f "Caddyfile.local" ] && print_status 0 "Caddyfile.local exists" || print_status 1 "Caddyfile.local missing"
 [ -f ".env.example" ] && print_status 0 ".env.example exists" || print_status 1 ".env.example missing"
+[ -f ".env.crowdtimer.example" ] && print_status 0 ".env.crowdtimer.example exists" || print_status 1 ".env.crowdtimer.example missing"
+[ -f "deploy/versions.env" ] && print_status 0 "deploy/versions.env exists" || print_status 1 "deploy/versions.env missing"
 [ -f "README.md" ] && print_status 0 "README.md exists" || print_status 1 "README.md missing"
 
 # Test 3: Check for .env files (should not be committed)
@@ -148,6 +157,50 @@ else
     print_warn "Fichus Feria backend not found at ../fichus/backend/feria"
 fi
 
+# Test 8: CrowdTimer shared-hosting contract
+echo ""
+echo "⏱️  Test 8: Checking CrowdTimer shared-hosting contract"
+
+for service in \
+    crowdtimer-pocketbase \
+    crowdtimer-app \
+    crowdtimer-cloudflared \
+    crowdtimer-pb-superuser \
+    crowdtimer-pb-init \
+    crowdtimer-site-publish; do
+    if rg -q "^  ${service}:" docker-compose.yml; then
+        print_status 0 "CrowdTimer service ${service} is declared"
+    else
+        print_status 1 "CrowdTimer service ${service} is declared"
+    fi
+done
+
+for hostname in crowdtimer.app live.crowdtimer.app pb.crowdtimer.app; do
+    if rg -q "${hostname}" Caddyfile; then
+        print_status 0 "Caddy routes ${hostname}"
+    else
+        print_status 1 "Caddy routes ${hostname}"
+    fi
+done
+
+if rg -q "pb-admin\\.crowdtimer\\.app" Caddyfile; then
+    print_status 1 "PocketBase admin is tunnel-only (not routed by Caddy)"
+else
+    print_status 0 "PocketBase admin is tunnel-only (not routed by Caddy)"
+fi
+
+if [ -f "deploy/versions.env" ] && rg -q '^CROWDTIMER_REF=[0-9a-f]{40}$' deploy/versions.env; then
+    print_status 0 "CrowdTimer production revision is pinned"
+else
+    print_status 1 "CrowdTimer production revision is pinned"
+fi
+
+if rg -q 'CROWDTIMER_REF' scripts/deploy.sh && rg -q 'CROWDTIMER_REF' .github/workflows/ci.yml; then
+    print_status 0 "Deploy paths enforce the CrowdTimer revision pin"
+else
+    print_status 1 "Deploy paths enforce the CrowdTimer revision pin"
+fi
+
 echo ""
 echo "================================"
 if [ "$FAILED" -eq 0 ]; then
@@ -158,7 +211,7 @@ fi
 echo ""
 echo "Next steps:"
 echo "  - Start local: docker compose -f docker-compose.local.yml up -d"
-echo "  - Deploy prod: docker compose up -d --build"
+echo "  - Deploy prod: protected manual GitHub Actions workflow"
 echo "  - View logs:   docker compose logs -f"
 
 exit "$FAILED"

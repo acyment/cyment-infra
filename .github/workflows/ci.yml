@@ -5,6 +5,13 @@ on:
     branches: [ master, main ]
   pull_request:
     branches: [ master, main ]
+  workflow_dispatch:
+    inputs:
+      deploy_production:
+        description: "Deploy the validated, pinned revisions to production"
+        required: true
+        type: boolean
+        default: false
 
 jobs:
   validate:
@@ -19,7 +26,11 @@ jobs:
 
       - name: Validate Docker Compose (Production)
         run: |
-          docker compose -f docker-compose.yml config > /dev/null
+          docker compose \
+            --env-file .env.example \
+            --env-file deploy/versions.env \
+            --env-file .env.crowdtimer.example \
+            -f docker-compose.yml config > /dev/null
           echo "✓ Production Docker Compose syntax is valid"
 
       - name: Validate Docker Compose (Local)
@@ -93,6 +104,11 @@ jobs:
           docker pull oven/bun:1.3-alpine
           echo "✓ Bun image available"
 
+      - name: Test cloudflared image pull
+        run: |
+          docker pull cloudflare/cloudflared:2026.9.1
+          echo "✓ cloudflared image available"
+
       - name: Summary
         run: |
           echo "================================"
@@ -109,7 +125,11 @@ jobs:
     name: Deploy to Production VPS
     runs-on: ubuntu-latest
     needs: build-test
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.deploy_production &&
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    environment: production
     steps:
       - name: Setup SSH
         run: |
@@ -126,6 +146,21 @@ jobs:
           EOF
           chmod 600 ~/.ssh/config
 
+      - name: Stage CrowdTimer production secrets
+        env:
+          CROWDTIMER_ENV_CONTENT: ${{ secrets.CROWDTIMER_ENV }}
+          CROWDTIMER_TUNNEL_TOKEN: ${{ secrets.CROWDTIMER_TUNNEL_TOKEN }}
+        run: |
+          test -n "$CROWDTIMER_ENV_CONTENT"
+          test -n "$CROWDTIMER_TUNNEL_TOKEN"
+          umask 077
+          printf '%s\n' "$CROWDTIMER_ENV_CONTENT" > /tmp/crowdtimer.env
+          printf '%s' "$CROWDTIMER_TUNNEL_TOKEN" > /tmp/crowdtimer-tunnel-token
+          ssh vps 'install -d -m 700 ~/.config/cyment-infra'
+          scp /tmp/crowdtimer.env vps:.config/cyment-infra/crowdtimer.env.next
+          scp /tmp/crowdtimer-tunnel-token vps:.config/cyment-infra/crowdtimer-tunnel-token.next
+          ssh vps 'chmod 600 ~/.config/cyment-infra/*.next && mv ~/.config/cyment-infra/crowdtimer.env.next ~/.config/cyment-infra/crowdtimer.env && mv ~/.config/cyment-infra/crowdtimer-tunnel-token.next ~/.config/cyment-infra/crowdtimer-tunnel-token'
+
       - name: Deploy to VPS
         run: |
           echo "🚀 Deploying to production VPS..."
@@ -141,6 +176,7 @@ jobs:
           FICHUS_REPO=git@github.com:acyment/fichus.git
           BOTINI_REPO=git@github.com:acyment/botini.club.git
           XCSTEWARD_REPO=https://github.com/acyment/XCSteward-website.git
+          CROWDTIMER_REPO=git@github.com:acyment/CrowdTimer.git
 
           ensure_repo() {
             local path="$1"
@@ -200,8 +236,32 @@ jobs:
               echo "$label pull failed"
             fi
           }
+
+          ensure_repo_ref() {
+            local path="$1"
+            local repo_url="$2"
+            local ref="$3"
+            local label="$4"
+            local actual_ref
+
+            if [ ! -d "$path/.git" ]; then
+              if [ -e "$path" ]; then
+                mv "$path" "${path}.pre-git.$(date +%Y%m%d%H%M%S)"
+              fi
+              git clone "$repo_url" "$path"
+            fi
+
+            git -C "$path" fetch origin "$ref"
+            git -C "$path" checkout --detach "$ref"
+            actual_ref=$(git -C "$path" rev-parse HEAD)
+            if [ "$actual_ref" != "$ref" ]; then
+              echo "$label checkout mismatch: expected $ref, got $actual_ref"
+              exit 1
+            fi
+          }
           echo 'Pulling latest changes...'
           git pull --ff-only origin "${{ github.ref_name }}"
+          source deploy/versions.env
 
           echo 'Pulling sibling repos...'
           ensure_repo ../backin15 "$BACKIN15_REPO" "$BACKIN15_BRANCH" backin15
@@ -209,9 +269,10 @@ jobs:
           ensure_repo ../fichus "$FICHUS_REPO" "$FICHUS_BRANCH" fichus
           ensure_repo ../botini.club "$BOTINI_REPO" "$BOTINI_BRANCH" botini.club
           ensure_repo ../XCSteward-website "$XCSTEWARD_REPO" "$XCSTEWARD_BRANCH" XCSteward-website
+          ensure_repo_ref ../CrowdTimer "$CROWDTIMER_REPO" "$CROWDTIMER_REF" CrowdTimer
 
           echo 'Running deployment script...'
-          ./scripts/deploy.sh production
+          CROWDTIMER_ENV_FILE="$HOME/.config/cyment-infra/crowdtimer.env" ./scripts/deploy.sh production
           REMOTE
 
       - name: Verify deployment
@@ -221,4 +282,5 @@ jobs:
           echo "Services:"
           echo "  - BackIn15: https://backin15.app"
           echo "  - Fichus Feria: https://feria.fichusapp.com/healthz"
-          ssh vps "cd ${{ secrets.VPS_PATH }} && docker compose ps"
+          echo "  - CrowdTimer: https://live.crowdtimer.app"
+          ssh vps "cd ${{ secrets.VPS_PATH }} && docker compose --env-file .env --env-file deploy/versions.env --env-file ~/.config/cyment-infra/crowdtimer.env ps"

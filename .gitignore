@@ -1,7 +1,11 @@
 # Environment files
 .env
 .env.local
+.env.crowdtimer
 .env.*.local
+
+# Runtime secrets materialized by the production deployment workflow
+.secrets/
 
 # Docker
 docker-compose.override.yml

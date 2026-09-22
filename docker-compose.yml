@@ -9,6 +9,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./sites:/srv/sites:ro
+      - crowdtimer_site_dist:/srv/crowdtimer-site:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:
@@ -282,6 +283,133 @@ services:
       - web
     restart: unless-stopped
 
+  # CrowdTimer one-shot administration and schema jobs are kept behind a
+  # profile so the normal `docker compose up --wait` lifecycle only contains
+  # long-running services. scripts/deploy.sh invokes these explicitly.
+  crowdtimer-pb-superuser:
+    profiles: ["crowdtimer-maintenance"]
+    image: ghcr.io/muchobien/pocketbase:0.37.5
+    command:
+      [
+        "superuser",
+        "upsert",
+        "${CROWDTIMER_PB_ADMIN_EMAIL:?set in CrowdTimer production env}",
+        "${CROWDTIMER_PB_ADMIN_PASSWORD:?set in CrowdTimer production env}",
+        "--dir=/pb_data",
+      ]
+    volumes:
+      - crowdtimer_pb_data:/pb_data
+    restart: "no"
+
+  crowdtimer-pocketbase:
+    image: ghcr.io/muchobien/pocketbase:0.37.5
+    command:
+      ["serve", "--http=0.0.0.0:8090", "--dir=/pb_data", "--hooksDir=/pb_hooks"]
+    environment:
+      PB_LOG_LEVEL: "debug"
+      RESEND_API_KEY: ${CROWDTIMER_RESEND_API_KEY:-}
+      FEEDBACK_NOTIFY_EMAIL: ${CROWDTIMER_FEEDBACK_NOTIFY_EMAIL:-}
+      MEETING_TOKEN_SECRET: ${CROWDTIMER_MEETING_TOKEN_SECRET:?set in CrowdTimer production env}
+    volumes:
+      - crowdtimer_pb_data:/pb_data
+      - ../CrowdTimer/pocketbase/pb_hooks:/pb_hooks:ro
+    networks:
+      - web
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8090/api/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  crowdtimer-app:
+    image: crowdtimer/app:${CROWDTIMER_REF:?set in deploy/versions.env}
+    build:
+      context: ../CrowdTimer
+      dockerfile: docker/crowdtimer-app/Dockerfile
+      args:
+        VITE_PB_URL: https://pb.crowdtimer.app
+        VITE_STARTUP_PERF: ${CROWDTIMER_VITE_STARTUP_PERF:-0}
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3000"
+      PB_URL: http://crowdtimer-pocketbase:8090
+      PUBLIC_DOMAIN: ${CROWDTIMER_PUBLIC_DOMAIN:-live.crowdtimer.app}
+      ENABLE_PROD_CCLOG: ${CROWDTIMER_ENABLE_PROD_CCLOG:-0}
+      PROD_CCLOG_TOKEN: ${CROWDTIMER_PROD_CCLOG_TOKEN:-}
+      CCLOG_TOKEN: ${CROWDTIMER_CCLOG_TOKEN:-}
+      CCLOG_DIR: /var/lib/crowdtimer/cclog
+      ENABLE_WATCHDOG: "1"
+      IDLE_RESET_SECONDS: "60"
+      WATCHDOG_INTERVAL_MS: "60000"
+      PB_ADMIN_EMAIL: ${CROWDTIMER_PB_ADMIN_EMAIL:?set in CrowdTimer production env}
+      PB_ADMIN_PASSWORD: ${CROWDTIMER_PB_ADMIN_PASSWORD:?set in CrowdTimer production env}
+      ZOOM_SAFE_MODE: ${CROWDTIMER_ZOOM_SAFE_MODE:-0}
+      ZOOM_CLIENT_ID: ${CROWDTIMER_ZOOM_CLIENT_ID:?set in CrowdTimer production env}
+      ZOOM_CLIENT_SECRET: ${CROWDTIMER_ZOOM_CLIENT_SECRET:?set in CrowdTimer production env}
+      MEETING_TOKEN_SECRET: ${CROWDTIMER_MEETING_TOKEN_SECRET:?set in CrowdTimer production env}
+    depends_on:
+      crowdtimer-pocketbase:
+        condition: service_healthy
+    volumes:
+      - crowdtimer_cclog_data:/var/lib/crowdtimer/cclog
+    networks:
+      - web
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  crowdtimer-pb-init:
+    profiles: ["crowdtimer-maintenance"]
+    image: crowdtimer/app:${CROWDTIMER_REF:?set in deploy/versions.env}
+    depends_on:
+      crowdtimer-pocketbase:
+        condition: service_healthy
+    environment:
+      PB_URL: http://crowdtimer-pocketbase:8090
+      PB_ADMIN_EMAIL: ${CROWDTIMER_PB_ADMIN_EMAIL:?set in CrowdTimer production env}
+      PB_ADMIN_PASSWORD: ${CROWDTIMER_PB_ADMIN_PASSWORD:?set in CrowdTimer production env}
+      PB_SCHEMA_PATH: /app/pocketbase/pb_schema.json
+    entrypoint: ["bun", "packages/core/scripts/seed-pocketbase.ts"]
+    networks:
+      - web
+    restart: "no"
+
+  crowdtimer-site-publish:
+    profiles: ["crowdtimer-maintenance"]
+    image: crowdtimer/site:${CROWDTIMER_REF:?set in deploy/versions.env}
+    build:
+      context: ../CrowdTimer
+      dockerfile: docker/crowdtimer-site/Dockerfile
+      args:
+        PUBLIC_GOATCOUNTER_URL: ${CROWDTIMER_PUBLIC_GOATCOUNTER_URL:-}
+        PUBLIC_UMAMI_SRC: ${CROWDTIMER_PUBLIC_UMAMI_SRC:-}
+        PUBLIC_UMAMI_WEBSITE_ID: ${CROWDTIMER_PUBLIC_UMAMI_WEBSITE_ID:-}
+    volumes:
+      - crowdtimer_site_dist:/srv/site
+    restart: "no"
+
+  # The admin dashboard is intentionally absent from Caddy. A remotely managed
+  # Cloudflare Tunnel publishes only pb-admin.crowdtimer.app and validates the
+  # Cloudflare Access token before forwarding to PocketBase.
+  crowdtimer-cloudflared:
+    image: cloudflare/cloudflared:2026.9.1
+    command: tunnel run --token-file /run/secrets/crowdtimer_cloudflared_token
+    depends_on:
+      crowdtimer-pocketbase:
+        condition: service_healthy
+    secrets:
+      - crowdtimer_cloudflared_token
+    networks:
+      - web
+    restart: unless-stopped
+
   # Twenty CRM (crm.cyment.com) — temporarily disabled, VPS RAM headroom too
   # tight (server+worker use ~1.7GB combined). Re-enable once the VPS is
   # resized; data is preserved in the twenty_pgdata/twenty_server_data volumes.
@@ -377,6 +505,9 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
+  crowdtimer_pb_data:
+  crowdtimer_cclog_data:
+  crowdtimer_site_dist:
   botini_pgdata:
   botini_media:
   umami_pgdata:
@@ -385,3 +516,7 @@ volumes:
   # by any active service while twenty-* is commented out above.
   twenty_pgdata:
   twenty_server_data:
+
+secrets:
+  crowdtimer_cloudflared_token:
+    file: ${CROWDTIMER_TUNNEL_TOKEN_FILE:?set in CrowdTimer production env}
