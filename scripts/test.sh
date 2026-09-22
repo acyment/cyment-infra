@@ -233,6 +233,12 @@ else
     print_status 1 "Deployment fetches declared repository URLs instead of stale origins"
 fi
 
+if file_matches 'ensure_repo \.\./(backin15|Tempi\.app|fichus|botini\.club|XCSteward-website)' .github/workflows/ci.yml; then
+    print_status 1 "CrowdTimer deployment leaves unrelated sibling checkouts untouched"
+else
+    print_status 0 "CrowdTimer deployment leaves unrelated sibling checkouts untouched"
+fi
+
 echo ""
 echo "================================"
 if [ "$FAILED" -eq 0 ]; then

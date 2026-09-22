@@ -263,12 +263,7 @@ jobs:
           git pull --ff-only origin "${{ github.ref_name }}"
           source deploy/versions.env
 
-          echo 'Pulling sibling repos...'
-          ensure_repo ../backin15 "$BACKIN15_REPO" "$BACKIN15_BRANCH" backin15
-          ensure_repo ../Tempi.app "$TEMPI_REPO" "$TEMPI_BRANCH" Tempi.app false
-          ensure_repo ../fichus "$FICHUS_REPO" "$FICHUS_BRANCH" fichus
-          ensure_repo ../botini.club "$BOTINI_REPO" "$BOTINI_BRANCH" botini.club
-          ensure_repo ../XCSteward-website "$XCSTEWARD_REPO" "$XCSTEWARD_BRANCH" XCSteward-website
+          echo 'Checking out the pinned CrowdTimer revision...'
           ensure_repo_ref ../CrowdTimer "$CROWDTIMER_REPO" "$CROWDTIMER_REF" CrowdTimer
 
           echo 'Running deployment script...'
