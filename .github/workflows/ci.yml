@@ -199,7 +199,7 @@ jobs:
               fi
             fi
 
-            if ! git -C "$path" fetch origin "$branch"; then
+            if ! git -C "$path" fetch "$repo_url" "$branch"; then
               if [ "$required" = "true" ]; then
                 echo "$label pull failed"
                 exit 1
@@ -218,7 +218,7 @@ jobs:
                 return
               fi
             else
-              if ! git -C "$path" checkout -B "$branch" "origin/$branch"; then
+              if ! git -C "$path" checkout -B "$branch" FETCH_HEAD; then
                 if [ "$required" = "true" ]; then
                   echo "$label pull failed"
                   exit 1
@@ -228,7 +228,7 @@ jobs:
               fi
             fi
 
-            if ! git -C "$path" pull --ff-only origin "$branch"; then
+            if ! git -C "$path" merge --ff-only FETCH_HEAD; then
               if [ "$required" = "true" ]; then
                 echo "$label pull failed"
                 exit 1
@@ -251,8 +251,8 @@ jobs:
               git clone "$repo_url" "$path"
             fi
 
-            git -C "$path" fetch origin "$ref"
-            git -C "$path" checkout --detach "$ref"
+            git -C "$path" fetch "$repo_url" "$ref"
+            git -C "$path" checkout --detach FETCH_HEAD
             actual_ref=$(git -C "$path" rev-parse HEAD)
             if [ "$actual_ref" != "$ref" ]; then
               echo "$label checkout mismatch: expected $ref, got $actual_ref"

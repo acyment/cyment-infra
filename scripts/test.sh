@@ -226,6 +226,13 @@ else
     print_status 1 "Deploy paths enforce the CrowdTimer revision pin"
 fi
 
+if file_matches 'git -C "\$path" fetch "\$repo_url" "\$branch"' .github/workflows/ci.yml &&
+    file_matches 'git -C "\$path" fetch "\$repo_url" "\$ref"' .github/workflows/ci.yml; then
+    print_status 0 "Deployment fetches declared repository URLs instead of stale origins"
+else
+    print_status 1 "Deployment fetches declared repository URLs instead of stale origins"
+fi
+
 echo ""
 echo "================================"
 if [ "$FAILED" -eq 0 ]; then
