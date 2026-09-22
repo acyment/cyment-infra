@@ -246,6 +246,15 @@ else
     print_status 1 "CrowdTimer checkout uses its protected read-only deploy key"
 fi
 
+CLOUDFLARED_BLOCK=$(sed -n '/^  crowdtimer-cloudflared:/,/^  [[:alnum:]][[:alnum:]_-]*:/p' docker-compose.yml)
+if printf '%s\n' "$CLOUDFLARED_BLOCK" | grep -Eq '^    user: "0:0"$' &&
+    printf '%s\n' "$CLOUDFLARED_BLOCK" | grep -Eq '^      - ALL$' &&
+    printf '%s\n' "$CLOUDFLARED_BLOCK" | grep -Eq '^      - no-new-privileges:true$'; then
+    print_status 0 "cloudflared can read its token secret with root capabilities disabled"
+else
+    print_status 1 "cloudflared can read its token secret with root capabilities disabled"
+fi
+
 echo ""
 echo "================================"
 if [ "$FAILED" -eq 0 ]; then
