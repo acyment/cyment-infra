@@ -239,6 +239,13 @@ else
     print_status 0 "CrowdTimer deployment leaves unrelated sibling checkouts untouched"
 fi
 
+if file_matches 'CROWDTIMER_DEPLOY_KEY' .github/workflows/ci.yml &&
+    file_matches 'GIT_SSH_COMMAND=.*crowdtimer-deploy-key' .github/workflows/ci.yml; then
+    print_status 0 "CrowdTimer checkout uses its protected read-only deploy key"
+else
+    print_status 1 "CrowdTimer checkout uses its protected read-only deploy key"
+fi
+
 echo ""
 echo "================================"
 if [ "$FAILED" -eq 0 ]; then

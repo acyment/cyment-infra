@@ -150,16 +150,20 @@ jobs:
         env:
           CROWDTIMER_ENV_CONTENT: ${{ secrets.CROWDTIMER_ENV }}
           CROWDTIMER_TUNNEL_TOKEN: ${{ secrets.CROWDTIMER_TUNNEL_TOKEN }}
+          CROWDTIMER_DEPLOY_KEY: ${{ secrets.CROWDTIMER_DEPLOY_KEY }}
         run: |
           test -n "$CROWDTIMER_ENV_CONTENT"
           test -n "$CROWDTIMER_TUNNEL_TOKEN"
+          test -n "$CROWDTIMER_DEPLOY_KEY"
           umask 077
           printf '%s\n' "$CROWDTIMER_ENV_CONTENT" > /tmp/crowdtimer.env
           printf '%s' "$CROWDTIMER_TUNNEL_TOKEN" > /tmp/crowdtimer-tunnel-token
+          printf '%s\n' "$CROWDTIMER_DEPLOY_KEY" > /tmp/crowdtimer-deploy-key
           ssh vps 'install -d -m 700 ~/.config/cyment-infra'
           scp /tmp/crowdtimer.env vps:.config/cyment-infra/crowdtimer.env.next
           scp /tmp/crowdtimer-tunnel-token vps:.config/cyment-infra/crowdtimer-tunnel-token.next
-          ssh vps 'chmod 600 ~/.config/cyment-infra/*.next && mv ~/.config/cyment-infra/crowdtimer.env.next ~/.config/cyment-infra/crowdtimer.env && mv ~/.config/cyment-infra/crowdtimer-tunnel-token.next ~/.config/cyment-infra/crowdtimer-tunnel-token'
+          scp /tmp/crowdtimer-deploy-key vps:.config/cyment-infra/crowdtimer-deploy-key.next
+          ssh vps 'chmod 600 ~/.config/cyment-infra/*.next && mv ~/.config/cyment-infra/crowdtimer.env.next ~/.config/cyment-infra/crowdtimer.env && mv ~/.config/cyment-infra/crowdtimer-tunnel-token.next ~/.config/cyment-infra/crowdtimer-tunnel-token && mv ~/.config/cyment-infra/crowdtimer-deploy-key.next ~/.config/cyment-infra/crowdtimer-deploy-key'
 
       - name: Deploy to VPS
         run: |
@@ -264,7 +268,9 @@ jobs:
           source deploy/versions.env
 
           echo 'Checking out the pinned CrowdTimer revision...'
+          export GIT_SSH_COMMAND="ssh -i $HOME/.config/cyment-infra/crowdtimer-deploy-key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
           ensure_repo_ref ../CrowdTimer "$CROWDTIMER_REPO" "$CROWDTIMER_REF" CrowdTimer
+          unset GIT_SSH_COMMAND
 
           echo 'Running deployment script...'
           CROWDTIMER_ENV_FILE="$HOME/.config/cyment-infra/crowdtimer.env" ./scripts/deploy.sh production
