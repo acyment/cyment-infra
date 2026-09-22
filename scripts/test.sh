@@ -45,6 +45,19 @@ run_check() {
     fi
 }
 
+# Keep repository checks portable across developer machines and the minimal
+# GitHub-hosted runner image.
+file_matches() {
+    local pattern="$1"
+    local file="$2"
+
+    if command -v rg > /dev/null 2>&1; then
+        rg -q -- "$pattern" "$file"
+    else
+        grep -Eq -- "$pattern" "$file"
+    fi
+}
+
 # Test 1: Validate Docker Compose files
 echo ""
 echo "📋 Test 1: Validating Docker Compose configurations"
@@ -73,13 +86,13 @@ echo "📁 Test 2: Checking required files"
 # Test 3: Check for .env files (should not be committed)
 echo ""
 echo "🔒 Test 3: Checking for sensitive files"
-if git ls-files | grep -q "\.env$"; then
+if git ls-files --error-unmatch -- .env > /dev/null 2>&1; then
     print_status 1 "WARNING: .env file is tracked by git!"
 else
     print_status 0 ".env file is not tracked (good)"
 fi
 
-if git ls-files | grep -q "\.env\.local$"; then
+if git ls-files --error-unmatch -- .env.local > /dev/null 2>&1; then
     print_status 1 "WARNING: .env.local file is tracked by git!"
 else
     print_status 0 ".env.local file is not tracked (good)"
@@ -101,16 +114,28 @@ fi
 # Test 5: Check for common security issues
 echo ""
 echo "🔐 Test 5: Security checks"
-SECRET_HITS=$(rg -n -i '(password|secret|token|api[_-]?key|private[_-]?key)\s*[:=]\s*["'\'']?[A-Za-z0-9+/=._-]{16,}' \
-    --glob '!README.md' \
-    --glob '!DEPLOYMENT.md' \
-    --glob '!VPS_FIXES.md' \
-    --glob '!ansible/README.md' \
-    --glob '!ansible/files/**' \
-    --glob '!scripts/**' \
-    --glob '!node_modules/**' \
-    --glob '!.git/**' \
-    . 2>/dev/null | grep -v '\${' | grep -v 'your_' | grep -v '_here' | head -5 || true)
+if command -v rg > /dev/null 2>&1; then
+    SECRET_HITS=$(rg -n -i '(password|secret|token|api[_-]?key|private[_-]?key)\s*[:=]\s*["'\'']?[A-Za-z0-9+/=._-]{16,}' \
+        --glob '!README.md' \
+        --glob '!DEPLOYMENT.md' \
+        --glob '!VPS_FIXES.md' \
+        --glob '!ansible/README.md' \
+        --glob '!ansible/files/**' \
+        --glob '!scripts/**' \
+        --glob '!node_modules/**' \
+        --glob '!.git/**' \
+        . 2>/dev/null | grep -v '\${' | grep -v 'your_' | grep -v '_here' | head -5 || true)
+else
+    SECRET_HITS=$(grep -RInE \
+        --exclude='README.md' \
+        --exclude='DEPLOYMENT.md' \
+        --exclude='VPS_FIXES.md' \
+        --exclude-dir='.git' \
+        --exclude-dir='node_modules' \
+        --exclude-dir='scripts' \
+        '(password|secret|token|api[_-]?key|private[_-]?key)[[:space:]]*[:=][[:space:]]*["'\'']?[A-Za-z0-9+/=._-]{16,}' \
+        . 2>/dev/null | grep -v '\${' | grep -v 'your_' | grep -v '_here' | head -5 || true)
+fi
 
 if [ -n "$SECRET_HITS" ]; then
     echo "$SECRET_HITS"
@@ -168,7 +193,7 @@ for service in \
     crowdtimer-pb-superuser \
     crowdtimer-pb-init \
     crowdtimer-site-publish; do
-    if rg -q "^  ${service}:" docker-compose.yml; then
+    if file_matches "^  ${service}:" docker-compose.yml; then
         print_status 0 "CrowdTimer service ${service} is declared"
     else
         print_status 1 "CrowdTimer service ${service} is declared"
@@ -176,26 +201,26 @@ for service in \
 done
 
 for hostname in crowdtimer.app live.crowdtimer.app pb.crowdtimer.app; do
-    if rg -q "${hostname}" Caddyfile; then
+    if file_matches "${hostname}" Caddyfile; then
         print_status 0 "Caddy routes ${hostname}"
     else
         print_status 1 "Caddy routes ${hostname}"
     fi
 done
 
-if rg -q "pb-admin\\.crowdtimer\\.app" Caddyfile; then
+if file_matches "pb-admin\\.crowdtimer\\.app" Caddyfile; then
     print_status 1 "PocketBase admin is tunnel-only (not routed by Caddy)"
 else
     print_status 0 "PocketBase admin is tunnel-only (not routed by Caddy)"
 fi
 
-if [ -f "deploy/versions.env" ] && rg -q '^CROWDTIMER_REF=[0-9a-f]{40}$' deploy/versions.env; then
+if [ -f "deploy/versions.env" ] && file_matches '^CROWDTIMER_REF=[0-9a-f]{40}$' deploy/versions.env; then
     print_status 0 "CrowdTimer production revision is pinned"
 else
     print_status 1 "CrowdTimer production revision is pinned"
 fi
 
-if rg -q 'CROWDTIMER_REF' scripts/deploy.sh && rg -q 'CROWDTIMER_REF' .github/workflows/ci.yml; then
+if file_matches 'CROWDTIMER_REF' scripts/deploy.sh && file_matches 'CROWDTIMER_REF' .github/workflows/ci.yml; then
     print_status 0 "Deploy paths enforce the CrowdTimer revision pin"
 else
     print_status 1 "Deploy paths enforce the CrowdTimer revision pin"
