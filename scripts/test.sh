@@ -247,12 +247,12 @@ else
 fi
 
 CLOUDFLARED_BLOCK=$(sed -n '/^  crowdtimer-cloudflared:/,/^  [[:alnum:]][[:alnum:]_-]*:/p' docker-compose.yml)
-if printf '%s\n' "$CLOUDFLARED_BLOCK" | grep -Eq '^    user: "0:0"$' &&
+if printf '%s\n' "$CLOUDFLARED_BLOCK" | grep -Fq '    user: "${CROWDTIMER_HOST_UID:-1000}:${CROWDTIMER_HOST_GID:-1000}"' &&
     printf '%s\n' "$CLOUDFLARED_BLOCK" | grep -Eq '^      - ALL$' &&
     printf '%s\n' "$CLOUDFLARED_BLOCK" | grep -Eq '^      - no-new-privileges:true$'; then
-    print_status 0 "cloudflared can read its token secret with root capabilities disabled"
+    print_status 0 "cloudflared reads its token as the unprivileged VPS owner"
 else
-    print_status 1 "cloudflared can read its token secret with root capabilities disabled"
+    print_status 1 "cloudflared reads its token as the unprivileged VPS owner"
 fi
 
 echo ""

@@ -400,9 +400,9 @@ services:
   # Cloudflare Access token before forwarding to PocketBase.
   crowdtimer-cloudflared:
     image: cloudflare/cloudflared:2026.9.1
-    # Compose bind-mounts file-backed secrets as root-only. Run as root solely
-    # to read the token, then remove every Linux capability and privilege gain.
-    user: "0:0"
+    # Compose preserves ownership for file-backed secrets. Match the VPS owner
+    # of the 0600 token file while keeping the connector fully unprivileged.
+    user: "${CROWDTIMER_HOST_UID:-1000}:${CROWDTIMER_HOST_GID:-1000}"
     cap_drop:
       - ALL
     security_opt:
